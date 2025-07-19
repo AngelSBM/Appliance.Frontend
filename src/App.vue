@@ -4,9 +4,10 @@
     <v-navigation-drawer
       v-model="drawer"
       app
-      :permanent="false"
-      :temporary="true"
+      :permanent="isDesktop"
+      :temporary="!isDesktop"
       width="280"
+      class="main-sidebar"
     >
       <v-list-item>
         <v-list-item-content>
@@ -51,7 +52,7 @@
     </v-app-bar>
 
     <!-- Contenido principal -->
-    <v-main class="pa-0">
+    <v-main class="pa-0 router-render">
       <router-view></router-view>
     </v-main>
 
@@ -98,7 +99,7 @@ export default {
   data() {
     return {
       drawer: true,
-      isDesktop: window.innerWidth >= 1280,
+      isDesktop: window.innerWidth >= 1264,
       snackbar: {
         show: false,
         text: '',
@@ -188,7 +189,19 @@ export default {
 /* Eliminar espacios en blanco y columnas negras */
 .v-navigation-drawer {
   border-right: none !important;
+
 }
+
+/* .main-sidebar {
+  background-color: red !important;
+  width: 15% !important;
+}
+
+.router-render{
+    background-color: blue !important;
+    width: 85% !important;
+    margin-left: 15% !important;
+} */
 
 .v-app-bar {
   border-bottom: none !important;
@@ -199,6 +212,7 @@ export default {
   width: 100% !important;
   max-width: 100% !important;
 }
+
 
 /* Eliminar márgenes y padding innecesarios */
 .v-container {
@@ -219,5 +233,40 @@ html, body {
 
 .v-application {
   overflow-x: hidden;
+}
+
+/* Asegurar que el layout sea responsive */
+.v-application {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Ajustar el contenido cuando el drawer es temporal */
+@media (max-width: 1263px) {
+  .v-main {
+    margin-left: 0 !important;
+  }
+
+}
+
+
+@media (min-width: 1263px) {
+
+  .main-sidebar {
+    width: 15% !important;
+  }
+
+  .router-render{
+    width: 85% !important;
+    margin-left: 15% !important;
+  }
+}
+
+
+/* Asegurar que las vistas ocupen todo el espacio disponible */
+.v-container {
+  height: 100%;
+  max-width: none !important;
 }
 </style> 
