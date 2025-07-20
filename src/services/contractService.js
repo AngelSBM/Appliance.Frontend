@@ -1,6 +1,6 @@
 import api from './api'
 
-export const contractService = {
+export default {
   // Obtener todos los contratos
   getAll() {
     return api.get('/Contract')

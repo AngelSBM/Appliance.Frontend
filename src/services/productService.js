@@ -1,6 +1,6 @@
 import api from './api'
 
-export const productService = {
+export default {
   // Obtener todos los productos
   getAll() {
     return api.get('/Product')

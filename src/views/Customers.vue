@@ -82,7 +82,7 @@
 <script>
 import DataTable from '@/components/DataTable.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { customerService } from '@/services/customerService'
+import customerService from '@/services/customerService'
 
 export default {
   name: 'Customers',

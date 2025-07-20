@@ -159,10 +159,10 @@
 </template>
 
 <script>
-import { customerService } from '@/services/customerService'
-import { contractService } from '@/services/contractService'
-import { productService } from '@/services/productService'
-import { installmentService } from '@/services/installmentService'
+import customerService from '@/services/customerService'
+import contractService from '@/services/contractService'
+import productService from '@/services/productService'
+import installmentService from '@/services/installmentService'
 
 export default {
   name: 'Dashboard',

@@ -1,6 +1,6 @@
-import api from './api'
+import api from './api.js'
 
-export const installmentStatusService = {
+export default {
   // Obtener todos los estados
   getAll() {
     return api.get('/InstallmentStatus')
@@ -12,13 +12,13 @@ export const installmentStatusService = {
   },
 
   // Crear nuevo estado
-  create(status) {
-    return api.post('/InstallmentStatus', status)
+  create(data) {
+    return api.post('/InstallmentStatus', data)
   },
 
   // Actualizar estado
-  update(id, status) {
-    return api.put(`/InstallmentStatus/${id}`, status)
+  update(id, data) {
+    return api.put(`/InstallmentStatus/${id}`, data)
   },
 
   // Eliminar estado

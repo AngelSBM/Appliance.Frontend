@@ -1,6 +1,6 @@
-import api from './api'
+import api from './api.js'
 
-export const installmentService = {
+export default {
   // Obtener todas las cuotas
   getAll() {
     return api.get('/Installment')
@@ -12,8 +12,8 @@ export const installmentService = {
   },
 
   // Actualizar cuota
-  update(id, installment) {
-    return api.put(`/Installment/${id}`, installment)
+  update(id, data) {
+    return api.put(`/Installment/${id}`, data)
   },
 
   // Eliminar cuota
@@ -42,7 +42,24 @@ export const installmentService = {
   },
 
   // Pagar cuota
-  pay(id, paymentData) {
-    return api.post(`/Installment/${id}/pay`, paymentData)
+  pay(id, data) {
+    return api.post(`/Installment/${id}/pay`, data)
+  },
+
+  // NUEVOS ENDPOINTS
+
+  // Obtener resumen estadístico
+  getSummary(filters = {}) {
+    return api.get('/Installment/summary', { params: filters })
+  },
+
+  // Obtener cuotas próximas a vencer
+  getUpcomingDue(filters = {}) {
+    return api.get('/Installment/upcoming-due', { params: filters })
+  },
+
+  // Obtener cuotas filtradas con paginación
+  getFiltered(filters = {}) {
+    return api.get('/Installment/filtered', { params: filters })
   }
 } 

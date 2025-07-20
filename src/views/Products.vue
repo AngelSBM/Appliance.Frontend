@@ -76,7 +76,7 @@
 <script>
 import DataTable from '@/components/DataTable.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { productService } from '@/services/productService'
+import productService from '@/services/productService'
 
 export default {
   name: 'Products',

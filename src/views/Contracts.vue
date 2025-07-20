@@ -249,9 +249,9 @@
 <script>
 import DataTable from '@/components/DataTable.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { contractService } from '@/services/contractService'
-import { customerService } from '@/services/customerService'
-import { productService } from '@/services/productService'
+import contractService from '@/services/contractService'
+import customerService from '@/services/customerService'
+import productService from '@/services/productService'
 
 export default {
   name: 'Contracts',

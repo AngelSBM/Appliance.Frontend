@@ -1,6 +1,6 @@
 import api from './api'
 
-export const customerService = {
+export default {
   // Obtener todos los clientes
   getAll() {
     return api.get('/Customer')
