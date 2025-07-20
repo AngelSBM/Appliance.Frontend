@@ -8,17 +8,93 @@
 
     <v-row>
       <v-col cols="12">
-        <DataTable
+        <v-data-table
           :headers="headers"
           :items="contracts"
           :loading="loading"
-          title="Contratos"
-          @add="showDialog = true"
-          @edit="editContract"
-          @view="viewContract"
-          @delete="deleteContract"
-          @refresh="loadContracts"
-        />
+          class="elevation-1"
+          density="comfortable"
+        >
+          <template v-slot:top>
+            <v-toolbar flat>
+              <v-toolbar-title>Contratos</v-toolbar-title>
+              <v-divider class="mx-4" inset vertical></v-divider>
+              <v-spacer></v-spacer>
+              <v-btn
+                color="primary"
+                dark
+                class="mb-2"
+                @click="showDialog = true"
+              >
+                <v-icon left>mdi-plus</v-icon>
+                Agregar
+              </v-btn>
+            </v-toolbar>
+          </template>
+
+          <template v-slot:item.date="{ item }">
+            {{ formatDate(item.date) }}
+          </template>
+
+          <template v-slot:item.productPrice="{ item }">
+            {{ formatCurrency(item.productPrice) }}
+          </template>
+
+          <template v-slot:item.actions="{ item }">
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-icon
+                  small
+                  class="mr-2"
+                  color="info"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="viewContract(item)"
+                >
+                  mdi-eye
+                </v-icon>
+              </template>
+              <span>Ver</span>
+            </v-tooltip>
+            
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-icon
+                  small
+                  class="mr-2"
+                  color="primary"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="editContract(item)"
+                >
+                  mdi-pencil
+                </v-icon>
+              </template>
+              <span>Editar</span>
+            </v-tooltip>
+            
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-icon
+                  small
+                  color="error"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="deleteContract(item)"
+                >
+                  mdi-delete
+                </v-icon>
+              </template>
+              <span>Eliminar</span>
+            </v-tooltip>
+          </template>
+
+          <template v-slot:no-data>
+            <v-btn color="primary" @click="loadContracts">
+              Recargar
+            </v-btn>
+          </template>
+        </v-data-table>
       </v-col>
     </v-row>
 
@@ -36,7 +112,7 @@
                 <v-select
                   v-model="editedItem.customerId"
                   :items="customers"
-                  item-text="fullName"
+                  item-title="fullName"
                   item-value="id"
                   label="Cliente"
                   required
@@ -46,7 +122,7 @@
                 <v-select
                   v-model="editedItem.productId"
                   :items="products"
-                  item-text="name"
+                  item-title="name"
                   item-value="id"
                   label="Producto"
                   required
@@ -103,7 +179,7 @@
               <v-col cols="12" md="6">
                 <h3>Información del Producto</h3>
                 <p><strong>Producto:</strong> {{ selectedContract.productName }}</p>
-                <p><strong>Precio:</strong> ${{ formatCurrency(selectedContract.productPrice) }}</p>
+                <p><strong>Precio:</strong> {{ formatCurrency(selectedContract.productPrice) }}</p>
               </v-col>
             </v-row>
             
@@ -140,7 +216,7 @@
                   <v-col cols="3">
                     <v-card class="text-center">
                       <v-card-text>
-                        <div class="text-h6">${{ formatCurrency(selectedContract.totalAmount) }}</div>
+                        <div class="text-h6">{{ formatCurrency(selectedContract.totalAmount) }}</div>
                         <div>Total</div>
                       </v-card-text>
                     </v-card>
@@ -174,6 +250,8 @@
 import DataTable from '@/components/DataTable.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { contractService } from '@/services/contractService'
+import { customerService } from '@/services/customerService'
+import { productService } from '@/services/productService'
 
 export default {
   name: 'Contracts',
@@ -181,6 +259,7 @@ export default {
     DataTable,
     ConfirmDialog
   },
+  inject: ['toast'],
   data() {
     return {
       loading: false,
@@ -191,15 +270,15 @@ export default {
       customers: [],
       products: [],
       headers: [
-        { text: 'ID', value: 'id' },
-        { text: 'Cliente', value: 'customerName' },
-        { text: 'Producto', value: 'productName' },
-        { text: 'Fecha', value: 'date' },
-        { text: 'Precio', value: 'productPrice' },
-        { text: 'Cuotas', value: 'installmentCount' },
-        { text: 'Pagadas', value: 'paidInstallments' },
-        { text: 'Pendientes', value: 'pendingInstallments' },
-        { text: 'Acciones', value: 'actions', sortable: false }
+        { title: 'ID', key: 'id', sortable: true },
+        { title: 'Cliente', key: 'customerName', sortable: true },
+        { title: 'Producto', key: 'productName', sortable: true },
+        { title: 'Fecha', key: 'date', sortable: true },
+        { title: 'Precio', key: 'productPrice', sortable: true },
+        { title: 'Cuotas', key: 'installmentCount', sortable: true },
+        { title: 'Pagadas', key: 'paidInstallments', sortable: true },
+        { title: 'Pendientes', key: 'pendingInstallments', sortable: true },
+        { title: 'Acciones', key: 'actions', sortable: false }
       ],
       editedIndex: -1,
       editedItem: {
@@ -227,79 +306,46 @@ export default {
     async loadContracts() {
       this.loading = true
       try {
-        // Datos dummy para contratos
-        this.contracts = [
-          {
-            id: 1,
-            customerName: 'Juan Pérez',
-            productName: 'Refrigerador Samsung',
-            date: '2024-01-15',
-            productPrice: 2500000,
-            installmentCount: 12,
-            paidInstallments: 3,
-            pendingInstallments: 9,
-            totalInstallments: 12,
-            totalAmount: 2500000,
-            paidAmount: 625000,
-            pendingAmount: 1875000
-          },
-          {
-            id: 2,
-            customerName: 'María García',
-            productName: 'Lavadora LG',
-            date: '2024-01-14',
-            productPrice: 1800000,
-            installmentCount: 6,
-            paidInstallments: 2,
-            pendingInstallments: 4,
-            totalInstallments: 6,
-            totalAmount: 1800000,
-            paidAmount: 600000,
-            pendingAmount: 1200000
-          },
-          {
-            id: 3,
-            customerName: 'Carlos López',
-            productName: 'Televisor Sony 55"',
-            date: '2024-01-13',
-            productPrice: 3200000,
-            installmentCount: 18,
-            paidInstallments: 5,
-            pendingInstallments: 13,
-            totalInstallments: 18,
-            totalAmount: 3200000,
-            paidAmount: 888889,
-            pendingAmount: 2311111
-          }
-        ]
+        const response = await contractService.getAll()
+        this.contracts = response.data
       } catch (error) {
         console.error('Error loading contracts:', error)
+        this.toast.error('Error al cargar los contratos')
       } finally {
         this.loading = false
       }
     },
 
     async loadCustomers() {
-      // Datos dummy para clientes
-      this.customers = [
-        { id: 1, fullName: 'Juan Pérez' },
-        { id: 2, fullName: 'María García' },
-        { id: 3, fullName: 'Carlos López' },
-        { id: 4, fullName: 'Ana Rodríguez' },
-        { id: 5, fullName: 'Luis Martínez' }
-      ]
+      try {
+        const response = await customerService.getAll()
+        this.customers = response.data
+      } catch (error) {
+        console.error('Error loading customers:', error)
+        this.toast.error('Error al cargar los clientes')
+        // Fallback a datos dummy
+        this.customers = [
+          { id: 1, fullName: 'Juan Pérez' },
+          { id: 2, fullName: 'María García' },
+          { id: 3, fullName: 'Carlos López' }
+        ]
+      }
     },
 
     async loadProducts() {
-      // Datos dummy para productos
-      this.products = [
-        { id: 1, name: 'Refrigerador Samsung' },
-        { id: 2, name: 'Lavadora LG' },
-        { id: 3, name: 'Televisor Sony 55"' },
-        { id: 4, name: 'Microondas Panasonic' },
-        { id: 5, name: 'Cocina Eléctrica Whirlpool' },
-        { id: 6, name: 'Aire Acondicionado Carrier' }
-      ]
+      try {
+        const response = await productService.getAll()
+        this.products = response.data
+      } catch (error) {
+        console.error('Error loading products:', error)
+        this.toast.error('Error al cargar los productos')
+        // Fallback a datos dummy
+        this.products = [
+          { id: 1, name: 'Refrigerador Samsung' },
+          { id: 2, name: 'Lavadora LG' },
+          { id: 3, name: 'Televisor Sony 55"' }
+        ]
+      }
     },
 
     editContract(item) {
@@ -326,19 +372,18 @@ export default {
     async confirmDelete() {
       if (this.contractToDelete) {
         try {
-          // Aquí iría la llamada real al servicio
-          // await contractService.delete(this.contractToDelete.id)
+          await contractService.delete(this.contractToDelete.id)
           
-          // Simular eliminación
+          // Eliminar de la lista local
           const index = this.contracts.indexOf(this.contractToDelete)
           if (index > -1) {
             this.contracts.splice(index, 1)
           }
           
-          this.$toast.success('Contrato eliminado exitosamente')
+          this.toast.success('Contrato eliminado exitosamente')
         } catch (error) {
           console.error('Error deleting contract:', error)
-          this.$toast.error('Error al eliminar el contrato')
+          this.toast.error('Error al eliminar el contrato')
         }
       }
       this.contractToDelete = null
@@ -356,41 +401,45 @@ export default {
       try {
         if (this.editedIndex > -1) {
           // Actualizar contrato existente
-          // await contractService.update(this.editedItem.id, this.editedItem)
-          this.$toast.success('Contrato actualizado exitosamente')
+          await contractService.update(this.editedItem.id, this.editedItem)
+          this.toast.success('Contrato actualizado exitosamente')
         } else {
           // Crear nuevo contrato
-          // const response = await contractService.create(this.editedItem)
-          const customer = this.customers.find(c => c.id === this.editedItem.customerId)
-          const product = this.products.find(p => p.id === this.editedItem.productId)
-          
-          const newContract = {
-            id: this.contracts.length + 1,
-            customerName: customer ? customer.fullName : '',
-            productName: product ? product.name : '',
-            date: new Date().toISOString().split('T')[0],
-            productPrice: 2500000, // Precio dummy
-            installmentCount: this.editedItem.installmentCount,
-            paidInstallments: 0,
-            pendingInstallments: this.editedItem.installmentCount,
-            totalInstallments: this.editedItem.installmentCount,
-            totalAmount: 2500000,
-            paidAmount: 0,
-            pendingAmount: 2500000,
-            notes: this.editedItem.notes
-          }
-          this.contracts.push(newContract)
-          this.$toast.success('Contrato creado exitosamente')
+          const response = await contractService.create(this.editedItem)
+          this.contracts.push(response.data)
+          this.toast.success('Contrato creado exitosamente')
         }
         this.close()
       } catch (error) {
         console.error('Error saving contract:', error)
-        this.$toast.error('Error al guardar el contrato')
+        this.toast.error('Error al guardar el contrato')
       }
     },
 
     formatCurrency(amount) {
-      return new Intl.NumberFormat('es-CO').format(amount)
+      return new Intl.NumberFormat('es-DO', {
+        style: 'currency',
+        currency: 'DOP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(amount)
+    },
+
+    formatDate(dateString) {
+      if (!dateString) return '-'
+      
+      try {
+        const date = new Date(dateString)
+        return new Intl.DateTimeFormat('es-DO', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }).format(date)
+      } catch (error) {
+        return dateString
+      }
     }
   }
 }
