@@ -8,17 +8,108 @@
 
     <v-row>
       <v-col cols="12">
-        <DataTable
+        <v-data-table
           :headers="headers"
           :items="installments"
           :loading="loading"
-          title="Cuotas"
-          :show-add-button="false"
-          @edit="editInstallment"
-          @view="viewInstallment"
-          @delete="deleteInstallment"
-          @refresh="loadInstallments"
-        />
+          class="elevation-1"
+          density="comfortable"
+        >
+          <template v-slot:top>
+            <v-toolbar flat>
+              <v-toolbar-title>Cuotas</v-toolbar-title>
+              <v-divider class="mx-4" inset vertical></v-divider>
+              <v-spacer></v-spacer>
+            </v-toolbar>
+          </template>
+
+          <template v-slot:item.amount="{ item }">
+            {{ formatCurrency(item.amount) }}
+          </template>
+
+          <template v-slot:item.status="{ item }">
+            <v-chip
+              :color="getStatusColor(item.installmentStatusId)"
+              text-color="white"
+              small
+            >
+              {{ getStatusText(item.installmentStatusId) }}
+            </v-chip>
+          </template>
+
+          <template v-slot:item.dueDate="{ item }">
+            {{ formatDate(item.dueDate) }}
+          </template>
+
+          <template v-slot:item.paymentDate="{ item }">
+            {{ item.paymentDate ? formatDateTime(item.paymentDate) : 'N/A' }}
+          </template>
+
+          <template v-slot:item.isOverdue="{ item }">
+            <v-chip
+              :color="getOverdueColor(item.isOverdue)"
+              text-color="white"
+              small
+            >
+              {{ getOverdueText(item.isOverdue) }}
+            </v-chip>
+          </template>
+
+          <template v-slot:item.actions="{ item }">
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-icon
+                  small
+                  class="mr-2"
+                  color="info"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="viewInstallment(item)"
+                >
+                  mdi-eye
+                </v-icon>
+              </template>
+              <span>Ver</span>
+            </v-tooltip>
+            
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-icon
+                  small
+                  class="mr-2"
+                  color="primary"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="editInstallment(item)"
+                >
+                  mdi-pencil
+                </v-icon>
+              </template>
+              <span>Editar</span>
+            </v-tooltip>
+            
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-icon
+                  small
+                  color="error"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="deleteInstallment(item)"
+                >
+                  mdi-delete
+                </v-icon>
+              </template>
+              <span>Eliminar</span>
+            </v-tooltip>
+          </template>
+
+          <template v-slot:no-data>
+            <v-btn color="primary" @click="loadInstallments">
+              Recargar
+            </v-btn>
+          </template>
+        </v-data-table>
       </v-col>
     </v-row>
 
@@ -45,7 +136,7 @@
                 <v-select
                   v-model="editedItem.installmentStatusId"
                   :items="statuses"
-                  item-text="status"
+                  item-title="status"
                   item-value="id"
                   label="Estado"
                   required
@@ -143,9 +234,15 @@
               <v-col cols="12" md="6">
                 <h3>Información de la Cuota</h3>
                 <p><strong>Número:</strong> {{ selectedInstallment.installmentNumber }}</p>
-                <p><strong>Monto:</strong> ${{ formatCurrency(selectedInstallment.amount) }}</p>
+                <p><strong>Monto:</strong> {{ formatCurrency(selectedInstallment.amount) }}</p>
                 <p><strong>Estado:</strong> 
-                  <StatusChip :status="selectedInstallment.status" type="installment" />
+                  <v-chip
+                    :color="getStatusColor(selectedInstallment.installmentStatusId)"
+                    text-color="white"
+                    small
+                  >
+                    {{ getStatusText(selectedInstallment.installmentStatusId) }}
+                  </v-chip>
                 </p>
               </v-col>
               <v-col cols="12" md="6">
@@ -153,7 +250,7 @@
                 <p><strong>Inicio:</strong> {{ formatDate(selectedInstallment.startDate) }}</p>
                 <p><strong>Vencimiento:</strong> {{ formatDate(selectedInstallment.dueDate) }}</p>
                 <p v-if="selectedInstallment.paymentDate">
-                  <strong>Pago:</strong> {{ formatDate(selectedInstallment.paymentDate) }}
+                  <strong>Pago:</strong> {{ formatDateTime(selectedInstallment.paymentDate) }}
                 </p>
               </v-col>
             </v-row>
@@ -217,6 +314,7 @@ export default {
     ConfirmDialog,
     StatusChip
   },
+  inject: ['toast'],
   data() {
     return {
       loading: false,
@@ -226,20 +324,22 @@ export default {
       showConfirmDialog: false,
       installments: [],
       statuses: [
-        { id: 'PENDING', status: 'Pendiente' },
-        { id: 'PAID', status: 'Pagada' },
-        { id: 'OVERDUE', status: 'Vencida' }
+        { id: '1', status: 'Pendiente', color: 'grey' },
+        { id: '2', status: 'Próxima a vencer', color: 'warning' },
+        { id: '3', status: 'Vence hoy', color: 'orange' },
+        { id: '4', status: 'Vencida', color: 'error' },
+        { id: '5', status: 'Pagada', color: 'success' }
       ],
       headers: [
-        { text: 'ID', value: 'id' },
-        { text: 'Contrato', value: 'contractId' },
-        { text: 'Número', value: 'installmentNumber' },
-        { text: 'Monto', value: 'amount' },
-        { text: 'Estado', value: 'status' },
-        { text: 'Vencimiento', value: 'dueDate' },
-        { text: 'Pago', value: 'paymentDate' },
-        { text: 'Vencida', value: 'isOverdue' },
-        { text: 'Acciones', value: 'actions', sortable: false }
+        { title: 'ID', key: 'id', sortable: true },
+        { title: 'Contrato', key: 'contractId', sortable: true },
+        { title: 'Número', key: 'installmentNumber', sortable: true },
+        { title: 'Monto', key: 'amount', sortable: true },
+        { title: 'Estado', key: 'status', sortable: true },
+        { title: 'Vencimiento', key: 'dueDate', sortable: true },
+        { title: 'Pago', key: 'paymentDate', sortable: true },
+        { title: 'Vencida', key: 'isOverdue', sortable: true },
+        { title: 'Acciones', key: 'actions', sortable: false }
       ],
       editedIndex: -1,
       editedItem: {
@@ -270,7 +370,12 @@ export default {
     async loadInstallments() {
       this.loading = true
       try {
-        // Datos dummy para cuotas
+        const response = await installmentService.getAll()
+        this.installments = response.data
+      } catch (error) {
+        console.error('Error loading installments:', error)
+        this.toast.error('Error al cargar las cuotas')
+        // Fallback a datos dummy en caso de error
         this.installments = [
           {
             id: 1,
@@ -290,56 +395,15 @@ export default {
             contractId: 1,
             installmentNumber: 2,
             amount: 208333,
-            status: 'PAID',
+            status: 'PENDING',
             startDate: '2024-02-15',
             dueDate: '2024-03-15',
-            paymentDate: '2024-03-12',
-            note: '',
-            isOverdue: false,
-            daysOverdue: 0
-          },
-          {
-            id: 3,
-            contractId: 1,
-            installmentNumber: 3,
-            amount: 208333,
-            status: 'PENDING',
-            startDate: '2024-03-15',
-            dueDate: '2024-04-15',
-            paymentDate: null,
-            note: '',
-            isOverdue: false,
-            daysOverdue: 0
-          },
-          {
-            id: 4,
-            contractId: 2,
-            installmentNumber: 1,
-            amount: 300000,
-            status: 'OVERDUE',
-            startDate: '2024-01-14',
-            dueDate: '2024-02-14',
-            paymentDate: null,
-            note: 'Cuota vencida',
-            isOverdue: true,
-            daysOverdue: 5
-          },
-          {
-            id: 5,
-            contractId: 2,
-            installmentNumber: 2,
-            amount: 300000,
-            status: 'PENDING',
-            startDate: '2024-02-14',
-            dueDate: '2024-03-14',
             paymentDate: null,
             note: '',
             isOverdue: false,
             daysOverdue: 0
           }
         ]
-      } catch (error) {
-        console.error('Error loading installments:', error)
       } finally {
         this.loading = false
       }
@@ -380,19 +444,18 @@ export default {
     async confirmDelete() {
       if (this.installmentToDelete) {
         try {
-          // Aquí iría la llamada real al servicio
-          // await installmentService.delete(this.installmentToDelete.id)
+          await installmentService.delete(this.installmentToDelete.id)
           
-          // Simular eliminación
+          // Eliminar de la lista local
           const index = this.installments.indexOf(this.installmentToDelete)
           if (index > -1) {
             this.installments.splice(index, 1)
           }
           
-          this.$toast.success('Cuota eliminada exitosamente')
+          this.toast.success('Cuota eliminada exitosamente')
         } catch (error) {
           console.error('Error deleting installment:', error)
-          this.$toast.error('Error al eliminar la cuota')
+          this.toast.error('Error al eliminar la cuota')
         }
       }
       this.installmentToDelete = null
@@ -415,7 +478,7 @@ export default {
       try {
         if (this.editedIndex > -1) {
           // Actualizar cuota existente
-          // await installmentService.update(this.editedItem.id, this.editedItem)
+          await installmentService.update(this.editedItem.id, this.editedItem)
           const installment = this.installments[this.editedIndex]
           Object.assign(installment, {
             amount: this.editedItem.amount,
@@ -423,21 +486,20 @@ export default {
             paymentDate: this.editedItem.paymentDate || null,
             note: this.editedItem.note
           })
-          this.$toast.success('Cuota actualizada exitosamente')
+          this.toast.success('Cuota actualizada exitosamente')
         }
         this.close()
       } catch (error) {
         console.error('Error saving installment:', error)
-        this.$toast.error('Error al guardar la cuota')
+        this.toast.error('Error al guardar la cuota')
       }
     },
 
     async processPayment() {
       try {
-        // Aquí iría la llamada real al servicio
-        // await installmentService.pay(this.selectedInstallment.id, this.paymentData)
+        await installmentService.pay(this.selectedInstallment.id, this.paymentData)
         
-        // Simular pago
+        // Actualizar localmente
         const installment = this.installments.find(i => i.id === this.selectedInstallment.id)
         if (installment) {
           installment.status = 'PAID'
@@ -447,21 +509,59 @@ export default {
           installment.daysOverdue = 0
         }
         
-        this.$toast.success('Pago procesado exitosamente')
+        this.toast.success('Pago procesado exitosamente')
         this.closePayment()
       } catch (error) {
         console.error('Error processing payment:', error)
-        this.$toast.error('Error al procesar el pago')
+        this.toast.error('Error al procesar el pago')
       }
     },
 
     formatDate(date) {
       if (!date) return 'N/A'
-      return new Date(date).toLocaleDateString('es-ES')
+      return new Intl.DateTimeFormat('es-DO', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }).format(new Date(date))
+    },
+
+    formatDateTime(date) {
+      if (!date) return 'N/A'
+      return new Intl.DateTimeFormat('es-DO', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(date))
     },
 
     formatCurrency(amount) {
-      return new Intl.NumberFormat('es-CO').format(amount)
+      return new Intl.NumberFormat('es-DO', {
+        style: 'currency',
+        currency: 'DOP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(amount)
+    },
+
+    getStatusColor(statusId) {
+      const status = this.statuses.find(s => s.id === statusId)
+      return status ? status.color : 'grey'
+    },
+
+    getStatusText(statusId) {
+      const status = this.statuses.find(s => s.id === statusId)
+      return status ? status.status : 'Desconocido'
+    },
+
+    getOverdueColor(isOverdue) {
+      return isOverdue ? 'error' : 'success'
+    },
+
+    getOverdueText(isOverdue) {
+      return isOverdue ? 'Vencida' : 'Al día'
     }
   }
 }
