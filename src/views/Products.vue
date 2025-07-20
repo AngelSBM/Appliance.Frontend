@@ -84,6 +84,7 @@ export default {
     DataTable,
     ConfirmDialog
   },
+  inject: ['toast'],
   data() {
     return {
       loading: false,
@@ -91,11 +92,11 @@ export default {
       showConfirmDialog: false,
       products: [],
       headers: [
-        { text: 'ID', value: 'id' },
-        { text: 'Nombre', value: 'name' },
-        { text: 'Precio', value: 'price' },
-        { text: 'Total Contratos', value: 'totalContracts' },
-        { text: 'Acciones', value: 'actions', sortable: false }
+        { title: 'ID', key: 'id', sortable: true },
+        { title: 'Nombre', key: 'name', sortable: true },
+        { title: 'Precio', key: 'price', sortable: true },
+        { title: 'Total Contratos', key: 'totalContracts', sortable: true },
+        { title: 'Acciones', key: 'actions', sortable: false }
       ],
       editedIndex: -1,
       editedItem: {
@@ -116,7 +117,12 @@ export default {
     async loadProducts() {
       this.loading = true
       try {
-        // Datos dummy para productos
+        const response = await productService.getAll()
+        this.products = response.data
+      } catch (error) {
+        console.error('Error loading products:', error)
+        this.toast.error('Error al cargar los productos')
+        // Fallback a datos dummy en caso de error
         this.products = [
           {
             id: 1,
@@ -129,34 +135,8 @@ export default {
             name: 'Lavadora LG',
             price: 1800000,
             totalContracts: 3
-          },
-          {
-            id: 3,
-            name: 'Televisor Sony 55"',
-            price: 3200000,
-            totalContracts: 4
-          },
-          {
-            id: 4,
-            name: 'Microondas Panasonic',
-            price: 450000,
-            totalContracts: 2
-          },
-          {
-            id: 5,
-            name: 'Cocina Eléctrica Whirlpool',
-            price: 1200000,
-            totalContracts: 1
-          },
-          {
-            id: 6,
-            name: 'Aire Acondicionado Carrier',
-            price: 2800000,
-            totalContracts: 3
           }
         ]
-      } catch (error) {
-        console.error('Error loading products:', error)
       } finally {
         this.loading = false
       }
@@ -176,19 +156,18 @@ export default {
     async confirmDelete() {
       if (this.productToDelete) {
         try {
-          // Aquí iría la llamada real al servicio
-          // await productService.delete(this.productToDelete.id)
+          await productService.delete(this.productToDelete.id)
           
-          // Simular eliminación
+          // Eliminar de la lista local
           const index = this.products.indexOf(this.productToDelete)
           if (index > -1) {
             this.products.splice(index, 1)
           }
           
-          this.$toast.success('Producto eliminado exitosamente')
+          this.toast.success('Producto eliminado exitosamente')
         } catch (error) {
           console.error('Error deleting product:', error)
-          this.$toast.error('Error al eliminar el producto')
+          this.toast.error('Error al eliminar el producto')
         }
       }
       this.productToDelete = null
@@ -206,24 +185,19 @@ export default {
       try {
         if (this.editedIndex > -1) {
           // Actualizar producto existente
-          // await productService.update(this.editedItem.id, this.editedItem)
+          await productService.update(this.editedItem.id, this.editedItem)
           Object.assign(this.products[this.editedIndex], this.editedItem)
-          this.$toast.success('Producto actualizado exitosamente')
+          this.toast.success('Producto actualizado exitosamente')
         } else {
           // Crear nuevo producto
-          // const response = await productService.create(this.editedItem)
-          const newProduct = {
-            id: this.products.length + 1,
-            ...this.editedItem,
-            totalContracts: 0
-          }
-          this.products.push(newProduct)
-          this.$toast.success('Producto creado exitosamente')
+          const response = await productService.create(this.editedItem)
+          this.products.push(response.data)
+          this.toast.success('Producto creado exitosamente')
         }
         this.close()
       } catch (error) {
         console.error('Error saving product:', error)
-        this.$toast.error('Error al guardar el producto')
+        this.toast.error('Error al guardar el producto')
       }
     }
   }
