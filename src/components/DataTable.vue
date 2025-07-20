@@ -9,6 +9,7 @@
     :items-per-page="itemsPerPage"
     :items-per-page-options="[5, 10, 25, 50]"
     class="elevation-1"
+    density="comfortable"
   >
     <template v-slot:top>
       <v-toolbar flat>
@@ -38,29 +39,52 @@
     </template>
 
     <template v-slot:item.actions="{ item }">
-      <v-icon
-        small
-        class="mr-2"
-        @click="$emit('edit', item)"
-        v-if="showEditButton"
-      >
-        mdi-pencil
-      </v-icon>
-      <v-icon
-        small
-        class="mr-2"
-        @click="$emit('view', item)"
-        v-if="showViewButton"
-      >
-        mdi-eye
-      </v-icon>
-      <v-icon
-        small
-        @click="$emit('delete', item)"
-        v-if="showDeleteButton"
-      >
-        mdi-delete
-      </v-icon>
+      <v-tooltip bottom v-if="showEditButton">
+        <template v-slot:activator="{ on, attrs }">
+          <v-icon
+            small
+            class="mr-2"
+            color="primary"
+            v-bind="attrs"
+            v-on="on"
+            @click="$emit('edit', item)"
+          >
+            mdi-pencil
+          </v-icon>
+        </template>
+        <span>Editar</span>
+      </v-tooltip>
+      
+      <v-tooltip bottom v-if="showViewButton">
+        <template v-slot:activator="{ on, attrs }">
+          <v-icon
+            small
+            class="mr-2"
+            color="info"
+            v-bind="attrs"
+            v-on="on"
+            @click="$emit('view', item)"
+          >
+            mdi-eye
+          </v-icon>
+        </template>
+        <span>Ver</span>
+      </v-tooltip>
+      
+      <v-tooltip bottom v-if="showDeleteButton">
+        <template v-slot:activator="{ on, attrs }">
+          <v-icon
+            small
+            color="error"
+            v-bind="attrs"
+            v-on="on"
+            @click="$emit('delete', item)"
+          >
+            mdi-delete
+          </v-icon>
+        </template>
+        <span>Eliminar</span>
+      </v-tooltip>
     </template>
 
     <template v-slot:no-data>

@@ -90,6 +90,7 @@ export default {
     DataTable,
     ConfirmDialog
   },
+  inject: ['toast'],
   data() {
     return {
       loading: false,
@@ -97,13 +98,13 @@ export default {
       showConfirmDialog: false,
       customers: [],
       headers: [
-        { text: 'ID', value: 'id' },
-        { text: 'Nombre Completo', value: 'fullName' },
-        { text: 'Cédula', value: 'nationalId' },
-        { text: 'Edad', value: 'age' },
-        { text: 'Total Contratos', value: 'totalContracts' },
-        { text: 'Total Puntos', value: 'totalPoints' },
-        { text: 'Acciones', value: 'actions', sortable: false }
+        { title: 'ID', key: 'id', sortable: true },
+        { title: 'Nombre Completo', key: 'fullName', sortable: true },
+        { title: 'Cédula', key: 'nationalId', sortable: true },
+        { title: 'Edad', key: 'age', sortable: true },
+        { title: 'Total Contratos', key: 'totalContracts', sortable: true },
+        { title: 'Total Puntos', key: 'totalPoints', sortable: true },
+        { title: 'Acciones', key: 'actions', sortable: false }
       ],
       editedIndex: -1,
       editedItem: {
@@ -126,7 +127,12 @@ export default {
     async loadCustomers() {
       this.loading = true
       try {
-        // Datos dummy para clientes
+        const response = await customerService.getAll()
+        this.customers = response.data
+      } catch (error) {
+        console.error('Error loading customers:', error)
+        this.toast.error('Error al cargar los clientes')
+        // Fallback a datos dummy en caso de error
         this.customers = [
           {
             id: 1,
@@ -143,34 +149,8 @@ export default {
             age: 28,
             totalContracts: 1,
             totalPoints: 75
-          },
-          {
-            id: 3,
-            fullName: 'Carlos López',
-            nationalId: '11223344',
-            age: 42,
-            totalContracts: 3,
-            totalPoints: 225
-          },
-          {
-            id: 4,
-            fullName: 'Ana Rodríguez',
-            nationalId: '55667788',
-            age: 31,
-            totalContracts: 1,
-            totalPoints: 50
-          },
-          {
-            id: 5,
-            fullName: 'Luis Martínez',
-            nationalId: '99887766',
-            age: 39,
-            totalContracts: 2,
-            totalPoints: 120
           }
         ]
-      } catch (error) {
-        console.error('Error loading customers:', error)
       } finally {
         this.loading = false
       }
@@ -190,19 +170,18 @@ export default {
     async confirmDelete() {
       if (this.customerToDelete) {
         try {
-          // Aquí iría la llamada real al servicio
-          // await customerService.delete(this.customerToDelete.id)
+          await customerService.delete(this.customerToDelete.id)
           
-          // Simular eliminación
+          // Eliminar de la lista local
           const index = this.customers.indexOf(this.customerToDelete)
           if (index > -1) {
             this.customers.splice(index, 1)
           }
           
-          this.$toast.success('Cliente eliminado exitosamente')
+          this.toast.success('Cliente eliminado exitosamente')
         } catch (error) {
           console.error('Error deleting customer:', error)
-          this.$toast.error('Error al eliminar el cliente')
+          this.toast.error('Error al eliminar el cliente')
         }
       }
       this.customerToDelete = null
@@ -220,25 +199,19 @@ export default {
       try {
         if (this.editedIndex > -1) {
           // Actualizar cliente existente
-          // await customerService.update(this.editedItem.id, this.editedItem)
+          await customerService.update(this.editedItem.id, this.editedItem)
           Object.assign(this.customers[this.editedIndex], this.editedItem)
-          this.$toast.success('Cliente actualizado exitosamente')
+          this.toast.success('Cliente actualizado exitosamente')
         } else {
           // Crear nuevo cliente
-          // const response = await customerService.create(this.editedItem)
-          const newCustomer = {
-            id: this.customers.length + 1,
-            ...this.editedItem,
-            totalContracts: 0,
-            totalPoints: 0
-          }
-          this.customers.push(newCustomer)
-          this.$toast.success('Cliente creado exitosamente')
+          const response = await customerService.create(this.editedItem)
+          this.customers.push(response.data)
+          this.toast.success('Cliente creado exitosamente')
         }
         this.close()
       } catch (error) {
         console.error('Error saving customer:', error)
-        this.$toast.error('Error al guardar el cliente')
+        this.toast.error('Error al guardar el cliente')
       }
     }
   }

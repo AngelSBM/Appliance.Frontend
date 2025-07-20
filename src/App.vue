@@ -145,15 +145,18 @@ export default {
       ]
     }
   },
+  provide() {
+    return {
+      toast: {
+        success: (message) => this.showSnackbar(message, 'success'),
+        error: (message) => this.showSnackbar(message, 'error'),
+        warning: (message) => this.showSnackbar(message, 'warning'),
+        info: (message) => this.showSnackbar(message, 'info')
+      }
+    }
+  },
   mounted() {
     window.addEventListener('resize', this.handleResize)
-    // Configurar toast global
-    this.$toast = {
-      success: (message) => this.showSnackbar(message, 'success'),
-      error: (message) => this.showSnackbar(message, 'error'),
-      warning: (message) => this.showSnackbar(message, 'warning'),
-      info: (message) => this.showSnackbar(message, 'info')
-    }
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.handleResize)
