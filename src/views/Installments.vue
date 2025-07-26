@@ -85,16 +85,16 @@
                 </v-row>
               </v-col>
             </v-row>
-            <v-row v-else>
-              <v-col cols="12" class="text-center">
-                <v-progress-circular
-                  indeterminate
-                  color="primary"
-                  size="64"
-                ></v-progress-circular>
-                <div class="mt-4 text-body-1">Cargando resumen...</div>
-              </v-col>
-            </v-row>
+                          <v-row v-else>
+                <v-col cols="12" class="text-center">
+                  <v-progress-circular
+                    indeterminate
+                    color="primary"
+                    size="64"
+                  ></v-progress-circular>
+                  <div class="mt-4 text-body-1">Cargando resumen...</div>
+                </v-col>
+              </v-row>
           </v-card-text>
         </v-card>
       </v-col>
@@ -157,7 +157,7 @@
                         <template v-slot:item="{ props, item }">
                           <v-list-item v-bind="props">
                             <template v-slot:title>
-                              Contrato #{{ item.raw?.id || 'N/A' }} - {{ item.raw?.customerName || 'N/A' }}
+                              Contrato #{{ item.raw.id }} - {{ item.raw.customerName }}
                             </template>
                           </v-list-item>
                         </template>
@@ -241,48 +241,28 @@
               <!-- Template para número de cuota -->
               <template v-slot:item.installmentNumber="{ item }">
                 <v-chip
-                  v-if="item.installmentNumber !== undefined"
                   :color="getInstallmentNumberColor(item.installmentNumber)"
                   size="small"
                 >
                   #{{ item.installmentNumber }}
                 </v-chip>
-                <span v-else class="text-muted">-</span>
-              </template>
-
-              <!-- Template para cliente -->
-              <template v-slot:item.customerName="{ item }">
-                <span v-if="item.customerName" class="font-weight-medium">
-                  {{ item.customerName }}
-                </span>
-                <span v-else class="text-muted">-</span>
-              </template>
-
-              <!-- Template para contrato -->
-              <template v-slot:item.contractId="{ item }">
-                <span v-if="item.contractId" class="font-weight-medium">
-                  #{{ item.contractId }}
-                </span>
-                <span v-else class="text-muted">-</span>
               </template>
 
               <!-- Template para monto -->
               <template v-slot:item.amount="{ item }">
-                <span v-if="item.amount !== undefined" class="font-weight-bold">
+                <span class="font-weight-bold">
                   {{ formatCurrency(item.amount) }}
                 </span>
-                <span v-else class="text-muted">-</span>
               </template>
 
               <!-- Template para estado -->
               <template v-slot:item.status="{ item }">
-                <StatusChip v-if="item.status" :status="item.status" />
-                <span v-else class="text-muted">-</span>
+                <StatusChip :status="item.status" />
               </template>
 
               <!-- Template para fecha de vencimiento -->
               <template v-slot:item.dueDate="{ item }">
-                <div v-if="item.dueDate">
+                <div>
                   <div class="font-weight-medium">
                     {{ formatDate(item.dueDate) }}
                   </div>
@@ -293,7 +273,6 @@
                     Vence en {{ item.daysUntilDue }} días
                   </div>
                 </div>
-                <span v-else class="text-muted">-</span>
               </template>
 
               <!-- Template para fecha de pago -->
@@ -306,42 +285,39 @@
 
               <!-- Template para acciones -->
               <template v-slot:item.actions="{ item }">
-                <div v-if="item">
-                  <v-btn
-                    icon="mdi-eye"
-                    size="small"
-                    color="info"
-                    variant="text"
-                    @click="viewDetails(item)"
-                    :title="'Ver detalles'"
-                  ></v-btn>
-                  <v-btn
-                    v-if="item.status !== 'PAID'"
-                    icon="mdi-credit-card"
-                    size="small"
-                    color="success"
-                    variant="text"
-                    @click="openPaymentDialog(item)"
-                    :title="'Pagar cuota'"
-                  ></v-btn>
-                  <v-btn
-                    icon="mdi-pencil"
-                    size="small"
-                    color="warning"
-                    variant="text"
-                    @click="editItem(item)"
-                    :title="'Editar'"
-                  ></v-btn>
-                  <v-btn
-                    icon="mdi-delete"
-                    size="small"
-                    color="error"
-                    variant="text"
-                    @click="deleteItem(item)"
-                    :title="'Eliminar'"
-                  ></v-btn>
-                </div>
-                <span v-else class="text-muted">-</span>
+                <v-btn
+                  icon="mdi-eye"
+                  size="small"
+                  color="info"
+                  variant="text"
+                  @click="viewDetails(item)"
+                  :title="'Ver detalles'"
+                ></v-btn>
+                <v-btn
+                  v-if="item.status !== 'PAID'"
+                  icon="mdi-credit-card"
+                  size="small"
+                  color="success"
+                  variant="text"
+                  @click="openPaymentDialog(item)"
+                  :title="'Pagar cuota'"
+                ></v-btn>
+                <v-btn
+                  icon="mdi-pencil"
+                  size="small"
+                  color="warning"
+                  variant="text"
+                  @click="editItem(item)"
+                  :title="'Editar'"
+                ></v-btn>
+                <v-btn
+                  icon="mdi-delete"
+                  size="small"
+                  color="error"
+                  variant="text"
+                  @click="deleteItem(item)"
+                  :title="'Eliminar'"
+                ></v-btn>
               </template>
             </v-data-table>
 
@@ -478,37 +454,27 @@ export default {
       try {
         let response
         const filterParams = { ...filters }
-        
-        console.log('Loading data with filters:', filterParams)
-        console.log('Active tab:', activeTab.value)
 
         switch (activeTab.value) {
           case 'overdue':
             response = await installmentService.getOverdue()
-            console.log('Overdue response:', response)
             installments.value = response.data
             totalCount.value = response.data.length
             totalPages.value = 1
             break
           case 'upcoming':
             response = await installmentService.getUpcomingDue(filterParams)
-            console.log('Upcoming response:', response)
             installments.value = response.data
             totalCount.value = response.data.length
             totalPages.value = 1
             break
           default:
             response = await installmentService.getFiltered(filterParams)
-            console.log('Filtered response:', response)
             installments.value = response.data.installments
             totalCount.value = response.data.totalCount
             totalPages.value = response.data.totalPages
             break
         }
-        
-        console.log('Final installments value:', installments.value)
-        console.log('First installment structure:', installments.value[0])
-        console.log('First installment raw:', installments.value[0]?.raw)
       } catch (error) {
         console.error('Error loading installments:', error)
         toast.error('Error al cargar las cuotas')
@@ -647,7 +613,9 @@ export default {
     }
 
     const getInstallmentNumberColor = (number) => {
-      return 'primary'
+      if (number <= 3) return 'success'
+      if (number <= 6) return 'warning'
+      return 'info'
     }
 
     // Métodos de diálogos
