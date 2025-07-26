@@ -630,7 +630,11 @@ export default {
     }
 
     const openPaymentDialog = (installment) => {
-      selectedInstallment.value = installment
+      if (!installment) {
+        console.error('No installment provided to openPaymentDialog')
+        return
+      }
+      selectedInstallment.value = { ...installment }
       paymentDialog.value = true
     }
 

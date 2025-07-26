@@ -7,7 +7,7 @@
       </v-card-title>
 
       <v-card-text>
-        <div v-if="installment" class="mb-4">
+        <div v-if="installment && installment.installmentNumber" class="mb-4">
           <v-alert type="info" variant="tonal">
             <strong>Cuota #{{ installment.installmentNumber }}</strong><br>
             Monto: {{ formatCurrency(installment.amount) }}<br>
@@ -19,7 +19,7 @@
           <v-row>
             <v-col cols="12">
               <v-text-field
-                v-model="form.paymentDate"
+                v-model="formData.paymentDate"
                 label="Fecha de Pago"
                 type="datetime-local"
                 required
@@ -30,7 +30,7 @@
 
             <v-col cols="12">
               <v-text-field
-                v-model.number="form.pointsToAward"
+                v-model.number="formData.pointsToAward"
                 label="Puntos a Otorgar"
                 type="number"
                 min="0"
@@ -44,7 +44,7 @@
 
             <v-col cols="12">
               <v-textarea
-                v-model="form.note"
+                v-model="formData.note"
                 label="Nota del Pago"
                 rows="3"
                 prepend-icon="mdi-note-text"
@@ -131,6 +131,10 @@ export default {
 
     const save = async () => {
       if (!form.value || !form.value.validate()) return
+      if (!props.installment) {
+        console.error('No installment selected')
+        return
+      }
 
       loading.value = true
       try {
