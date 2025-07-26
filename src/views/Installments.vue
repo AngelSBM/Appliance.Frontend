@@ -257,7 +257,7 @@
 
               <!-- Template para estado -->
               <template v-slot:item.status="{ item }">
-                <StatusChip :status="item.status" />
+                <StatusChip :status="item.status" type="installment" />
               </template>
 
               <!-- Template para fecha de vencimiento -->
@@ -351,8 +351,7 @@
     <PaymentDialog
       v-model="paymentDialog"
       :installment="selectedInstallment"
-      @save="processPayment"
-      @close="closePaymentDialog"
+      @saved="processPayment"
     />
 
     <ConfirmDialog
@@ -699,9 +698,8 @@ export default {
       }
     }
 
-    const processPayment = async (paymentData) => {
+    const processPayment = async () => {
       try {
-        await installmentService.pay(selectedInstallment.value.id, paymentData)
         toast.success('Pago procesado exitosamente')
         closePaymentDialog()
         loadData()
