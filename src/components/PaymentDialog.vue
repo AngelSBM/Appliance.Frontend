@@ -1,112 +1,23 @@
 <template>
-  <v-dialog v-model="dialog" max-width="600px">
+  <v-dialog v-model="dialog" max-width="500px">
     <v-card>
       <v-card-title class="text-h5">
+        <v-icon class="mr-2" color="success">mdi-credit-card</v-icon>
         Pagar Cuota
       </v-card-title>
 
       <v-card-text>
-        <!-- Información del cliente -->
-        <v-card class="mb-4" variant="outlined">
-          <v-card-title class="text-subtitle-1 bg-blue-lighten-5">
-            <v-icon class="mr-2">mdi-account</v-icon>
-            Información del Cliente
-          </v-card-title>
-          <v-card-text>
-            <v-row>
-              <v-col cols="6">
-                <div class="text-caption text-grey">Nombre</div>
-                <div class="text-body-1 font-weight-medium">{{ paymentDetails?.customer?.fullName || 'N/A' }}</div>
-              </v-col>
-              <v-col cols="6">
-                <div class="text-caption text-grey">Cédula</div>
-                <div class="text-body-1 font-weight-medium">{{ paymentDetails?.customer?.nationalId || 'N/A' }}</div>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="6">
-                <div class="text-caption text-grey">Puntos Actuales</div>
-                <div class="text-body-1 font-weight-medium text-primary">{{ paymentDetails?.customer?.totalPoints || 0 }} pts</div>
-              </v-col>
-            </v-row>
-          </v-card-text>
-        </v-card>
-
-        <!-- Información del contrato -->
-        <v-card class="mb-4" variant="outlined">
-          <v-card-title class="text-subtitle-1 bg-green-lighten-5">
-            <v-icon class="mr-2">mdi-file-document</v-icon>
-            Información del Contrato
-          </v-card-title>
-          <v-card-text>
-            <v-row>
-              <v-col cols="12">
-                <div class="text-caption text-grey">Producto</div>
-                <div class="text-body-1 font-weight-medium">{{ paymentDetails?.contract?.productName || 'N/A' }}</div>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="4">
-                <div class="text-caption text-grey">Total Cuotas</div>
-                <div class="text-body-1 font-weight-medium">{{ paymentDetails?.contract?.totalInstallments || 0 }}</div>
-              </v-col>
-              <v-col cols="4">
-                <div class="text-caption text-grey">Pagadas</div>
-                <div class="text-body-1 font-weight-medium text-success">{{ paymentDetails?.contract?.paidInstallments || 0 }}</div>
-              </v-col>
-              <v-col cols="4">
-                <div class="text-caption text-grey">Pendientes</div>
-                <div class="text-body-1 font-weight-medium text-warning">{{ paymentDetails?.contract?.pendingInstallments || 0 }}</div>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="4">
-                <div class="text-caption text-grey">Total</div>
-                <div class="text-body-1 font-weight-medium">{{ formatCurrency(paymentDetails?.contract?.totalAmount || 0) }}</div>
-              </v-col>
-              <v-col cols="4">
-                <div class="text-caption text-grey">Pagado</div>
-                <div class="text-body-1 font-weight-medium text-success">{{ formatCurrency(paymentDetails?.contract?.paidAmount || 0) }}</div>
-              </v-col>
-              <v-col cols="4">
-                <div class="text-caption text-grey">Pendiente</div>
-                <div class="text-body-1 font-weight-medium text-warning">{{ formatCurrency(paymentDetails?.contract?.pendingAmount || 0) }}</div>
-              </v-col>
-            </v-row>
-          </v-card-text>
-        </v-card>
-
-        <!-- Información de la cuota actual -->
-        <v-card class="mb-4" variant="outlined">
-          <v-card-title class="text-subtitle-1 bg-orange-lighten-5">
-            <v-icon class="mr-2">mdi-currency-usd</v-icon>
-            Cuota a Pagar
-          </v-card-title>
-          <v-card-text>
-            <v-row>
-              <v-col cols="6">
-                <div class="text-caption text-grey">Cuota #</div>
-                <div class="text-body-1 font-weight-medium">{{ paymentDetails?.installment?.installmentNumber || 0 }} de {{ paymentDetails?.installment?.totalInstallments || 0 }}</div>
-              </v-col>
-              <v-col cols="6">
-                <div class="text-caption text-grey">Monto</div>
-                <div class="text-body-1 font-weight-medium text-primary">{{ formatCurrency(paymentDetails?.installment?.amount || 0) }}</div>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="6">
-                <div class="text-caption text-grey">Fecha de Vencimiento</div>
-                <div class="text-body-1 font-weight-medium">{{ formatDate(paymentDetails?.installment?.dueDate) }}</div>
-              </v-col>
-              <v-col cols="6">
-                <div class="text-caption text-grey">Estado</div>
-                <div class="text-body-1 font-weight-medium" :class="getStatusColor(paymentDetails?.installment?.status)">
-                  {{ paymentDetails?.installment?.status || 'N/A' }}
-                </div>
-              </v-col>
-            </v-row>
-          </v-card-text>
-        </v-card>
+        <!-- Información básica de la cuota -->
+        <v-alert
+          v-if="installment && installment.installmentNumber"
+          type="info"
+          variant="tonal"
+          class="mb-4"
+        >
+          <strong>Cuota #{{ installment.installmentNumber }}</strong><br>
+          Monto: {{ formatCurrency(installment.amount) }}<br>
+          Vencimiento: {{ formatDate(installment.dueDate) }}
+        </v-alert>
 
         <!-- Formulario de pago -->
         <v-form ref="form" v-model="valid">
@@ -192,7 +103,6 @@ export default {
     const form = ref(null)
     const valid = ref(false)
     const loading = ref(false)
-    const paymentDetails = ref(null)
 
     const formData = reactive({
       paymentDate: '',
@@ -209,24 +119,8 @@ export default {
       formData.paymentDate = ''
       formData.note = ''
       formData.pointsToAward = 0
-      paymentDetails.value = null
       if (form.value) {
         form.value.reset()
-      }
-    }
-
-    const loadPaymentDetails = async () => {
-      if (!props.installment?.id) return
-      
-      try {
-        loading.value = true
-        const response = await installmentService.getPaymentDetails(props.installment.id)
-        paymentDetails.value = response.data
-        updatePoints()
-      } catch (error) {
-        console.error('Error loading payment details:', error)
-      } finally {
-        loading.value = false
       }
     }
 
@@ -268,13 +162,13 @@ export default {
     }
 
     const updatePoints = () => {
-      if (!formData.paymentDate || !paymentDetails.value?.installment?.dueDate) {
+      if (!formData.paymentDate || !props.installment?.dueDate) {
         formData.pointsToAward = 0
         return
       }
 
       const status = calculateInstallmentStatus(
-        paymentDetails.value.installment.dueDate,
+        props.installment.dueDate,
         formData.paymentDate
       )
       formData.pointsToAward = calculatePoints(status)
@@ -287,12 +181,12 @@ export default {
     }
 
     const getPointsExplanation = () => {
-      if (!formData.paymentDate || !paymentDetails.value?.installment?.dueDate) {
+      if (!formData.paymentDate || !props.installment?.dueDate) {
         return 'Selecciona una fecha de pago para calcular los puntos'
       }
 
       const status = calculateInstallmentStatus(
-        paymentDetails.value.installment.dueDate,
+        props.installment.dueDate,
         formData.paymentDate
       )
 
@@ -307,21 +201,6 @@ export default {
           return 'Pago tardío: -5 puntos (penalización menor)'
         default:
           return 'Puntos calculados automáticamente según la fecha de pago'
-      }
-    }
-
-    const getStatusColor = (status) => {
-      switch (status) {
-        case 'Pagada':
-          return 'text-success'
-        case 'Vencida':
-          return 'text-error'
-        case 'Próxima a vencer':
-          return 'text-warning'
-        case 'Vence hoy':
-          return 'text-info'
-        default:
-          return 'text-grey'
       }
     }
 
@@ -359,9 +238,8 @@ export default {
     }
 
     // Watchers
-    watch(() => props.installment, async (newInstallment) => {
+    watch(() => props.installment, (newInstallment) => {
       if (newInstallment) {
-        await loadPaymentDetails()
         formData.paymentDate = new Date().toISOString().slice(0, 16)
       }
     }, { immediate: true })
@@ -375,7 +253,6 @@ export default {
       form,
       valid,
       loading,
-      paymentDetails,
       formData,
       close,
       save,
@@ -384,7 +261,6 @@ export default {
       updatePoints,
       getPointsColor,
       getPointsExplanation,
-      getStatusColor,
       formatDate,
       formatCurrency
     }

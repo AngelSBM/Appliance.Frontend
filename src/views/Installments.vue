@@ -310,14 +310,6 @@
                   @click="editItem(item)"
                   :title="'Editar'"
                 ></v-btn>
-                <v-btn
-                  icon="mdi-delete"
-                  size="small"
-                  color="error"
-                  variant="text"
-                  @click="deleteItem(item)"
-                  :title="'Eliminar'"
-                ></v-btn>
               </template>
             </v-data-table>
 
@@ -354,17 +346,13 @@
       @saved="processPayment"
     />
 
-    <ConfirmDialog
-      v-model="confirmDialog"
-      :title="confirmTitle"
-      :message="confirmMessage"
-      @confirm="confirmAction"
-    />
+
 
     <DetailsDialog
       v-model="detailsDialog"
       :installment="selectedInstallment"
       @close="closeDetailsDialog"
+      @process-payment="openPaymentDialog"
     />
   </v-container>
 </template>
@@ -377,7 +365,6 @@ import contractService from '@/services/contractService.js'
 import installmentStatusService from '@/services/installmentStatusService.js'
 import InstallmentDialog from '@/components/InstallmentDialog.vue'
 import PaymentDialog from '@/components/PaymentDialog.vue'
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import DetailsDialog from '@/components/DetailsDialog.vue'
 import StatusChip from '@/components/StatusChip.vue'
 
@@ -386,7 +373,6 @@ export default {
   components: {
     InstallmentDialog,
     PaymentDialog,
-    ConfirmDialog,
     DetailsDialog,
     StatusChip
   },
@@ -422,12 +408,8 @@ export default {
     // Diálogos
     const dialog = ref(false)
     const paymentDialog = ref(false)
-    const confirmDialog = ref(false)
     const detailsDialog = ref(false)
     const selectedInstallment = ref(null)
-    const confirmTitle = ref('')
-    const confirmMessage = ref('')
-    const confirmAction = ref(null)
 
     // Headers de la tabla
     const headers = [
@@ -643,7 +625,7 @@ export default {
     }
 
     const viewDetails = (installment) => {
-      selectedInstallment.value = installment
+      selectedInstallment.value = { ...installment }
       detailsDialog.value = true
     }
 
@@ -654,28 +636,6 @@ export default {
 
     const editItem = (installment) => {
       openDialog(installment)
-    }
-
-    const deleteItem = (installment) => {
-      selectedInstallment.value = installment
-      confirmTitle.value = 'Eliminar Cuota'
-      confirmMessage.value = `¿Estás seguro de que quieres eliminar la cuota #${installment.installmentNumber}?`
-      confirmAction.value = () => performDelete(installment.id)
-      confirmDialog.value = true
-    }
-
-    const performDelete = async (id) => {
-      try {
-        await installmentService.delete(id)
-        toast.success('Cuota eliminada exitosamente')
-        loadData()
-        if (activeTab.value === 'all') {
-          loadSummary()
-        }
-      } catch (error) {
-        console.error('Error deleting installment:', error)
-        toast.error('Error al eliminar la cuota')
-      }
     }
 
     const saveInstallment = async (installment) => {
@@ -736,11 +696,8 @@ export default {
       totalPages,
       dialog,
       paymentDialog,
-      confirmDialog,
       detailsDialog,
       selectedInstallment,
-      confirmTitle,
-      confirmMessage,
       headers,
       overdueOptions,
 
@@ -763,7 +720,6 @@ export default {
       viewDetails,
       closeDetailsDialog,
       editItem,
-      deleteItem,
       saveInstallment,
       processPayment
     }
