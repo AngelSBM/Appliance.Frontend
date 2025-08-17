@@ -2,7 +2,7 @@
   <v-container fluid>
     <v-row>
       <v-col cols="12">
-        <h1 class="text-h4 mb-4">Dashboard - Sistema de Electrodomésticos</h1>
+        <h1 class="text-h4 mb-4" style="color: white">Dashboard - ElectroApp</h1>
       </v-col>
     </v-row>
 
@@ -44,6 +44,49 @@
             <div class="text-h6 mb-2">Total Productos</div>
             <div class="text-h4 font-weight-bold info--text">{{ summary.totalProducts }}</div>
             <v-icon large color="info" class="mt-2">mdi-package-variant</v-icon>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Estadísticas adicionales -->
+    <v-row class="mt-4">
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="mx-auto" max-width="400">
+          <v-card-text>
+            <div class="text-h6 mb-2">Cuotas Pagadas</div>
+            <div class="text-h4 font-weight-bold success--text">{{ installmentSummary.paidInstallments || 0 }}</div>
+            <v-icon large color="success" class="mt-2">mdi-check-circle</v-icon>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="mx-auto" max-width="400">
+          <v-card-text>
+            <div class="text-h6 mb-2">Próximas Cuotas</div>
+            <div class="text-h4 font-weight-bold warning--text">{{ installmentSummary.upcomingDueInstallments || 0 }}</div>
+            <v-icon large color="warning" class="mt-2">mdi-clock</v-icon>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="mx-auto" max-width="400">
+          <v-card-text>
+            <div class="text-h6 mb-2">Monto Total</div>
+            <div class="text-h4 font-weight-bold primary--text">${{ formatCurrency(installmentSummary.totalAmount || 0) }}</div>
+            <v-icon large color="primary" class="mt-2">mdi-currency-usd</v-icon>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="mx-auto" max-width="400">
+          <v-card-text>
+            <div class="text-h6 mb-2">Monto Pagado</div>
+            <div class="text-h4 font-weight-bold success--text">${{ formatCurrency(installmentSummary.paidAmount || 0) }}</div>
+            <v-icon large color="success" class="mt-2">mdi-cash-check</v-icon>
           </v-card-text>
         </v-card>
       </v-col>
@@ -92,6 +135,36 @@
               </template>
               <template v-slot:item.daysOverdue="{ item }">
                 <v-chip color="error" small>{{ item.daysOverdue }} días</v-chip>
+              </template>
+            </v-data-table>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Cuotas próximas a vencer -->
+    <v-row class="mt-4">
+      <v-col cols="12">
+        <v-card>
+          <v-card-title>Cuotas Próximas a Vencer</v-card-title>
+          <v-card-text>
+            <v-data-table
+              :headers="upcomingHeaders"
+              :items="upcomingInstallments"
+              :loading="loading"
+              :items-per-page="10"
+              hide-default-footer
+            >
+              <template v-slot:item.dueDate="{ item }">
+                {{ formatDate(item.dueDate) }}
+              </template>
+              <template v-slot:item.amount="{ item }">
+                ${{ formatCurrency(item.amount) }}
+              </template>
+              <template v-slot:item.daysUntilDue="{ item }">
+                <v-chip :color="item.daysUntilDue <= 7 ? 'warning' : 'info'" small>
+                  {{ item.daysUntilDue }} días
+                </v-chip>
               </template>
             </v-data-table>
           </v-card-text>
@@ -177,6 +250,7 @@ export default {
       },
       recentContracts: [],
       overdueInstallments: [],
+      upcomingInstallments: [], // Added for upcoming installments
       contractHeaders: [
         { text: 'Cliente', value: 'customerName' },
         { text: 'Producto', value: 'productName' },
@@ -188,7 +262,19 @@ export default {
         { text: 'Vencimiento', value: 'dueDate' },
         { text: 'Monto', value: 'amount' },
         { text: 'Días Vencido', value: 'daysOverdue' }
-      ]
+      ],
+      upcomingHeaders: [ // Added for upcoming installments headers
+        { text: 'Cliente', value: 'customerName' },
+        { text: 'Vencimiento', value: 'dueDate' },
+        { text: 'Monto', value: 'amount' },
+        { text: 'Días Hasta Vencimiento', value: 'daysUntilDue' }
+      ],
+      installmentSummary: {
+        paidInstallments: 0,
+        upcomingDueInstallments: 0,
+        totalAmount: 0,
+        paidAmount: 0
+      }
     }
   },
   async mounted() {
@@ -198,64 +284,102 @@ export default {
     async loadDashboardData() {
       this.loading = true
       try {
-        // Cargar datos de resumen con datos dummy
-        this.summary = {
-          totalCustomers: 25,
-          totalContracts: 45,
-          overdueInstallments: 8,
-          totalProducts: 12
-        }
+        // Cargar datos de resumen desde la API
+        await this.loadSummaryData()
+        
+        // Cargar contratos recientes
+        await this.loadRecentContracts()
+        
+        // Cargar cuotas vencidas
+        await this.loadOverdueInstallments()
 
-        // Datos dummy para contratos recientes
-        this.recentContracts = [
-          {
-            customerName: 'Juan Pérez',
-            productName: 'Refrigerador Samsung',
-            date: '2024-01-15',
-            productPrice: 2500000
-          },
-          {
-            customerName: 'María García',
-            productName: 'Lavadora LG',
-            date: '2024-01-14',
-            productPrice: 1800000
-          },
-          {
-            customerName: 'Carlos López',
-            productName: 'Televisor Sony',
-            date: '2024-01-13',
-            productPrice: 3200000
-          }
-        ]
+        // Cargar cuotas próximas a vencer
+        await this.loadUpcomingInstallments()
 
-        // Datos dummy para cuotas vencidas
-        this.overdueInstallments = [
-          {
-            customerName: 'Ana Rodríguez',
-            dueDate: '2024-01-10',
-            amount: 150000,
-            daysOverdue: 5
-          },
-          {
-            customerName: 'Luis Martínez',
-            dueDate: '2024-01-08',
-            amount: 200000,
-            daysOverdue: 7
-          },
-          {
-            customerName: 'Carmen Silva',
-            dueDate: '2024-01-05',
-            amount: 180000,
-            daysOverdue: 10
-          }
-        ]
+        // Cargar resumen de cuotas
+        await this.loadInstallmentSummary()
 
       } catch (error) {
         console.error('Error loading dashboard data:', error)
+        // Usar el sistema de toast proporcionado por el padre
+        if (this.$root && this.$root.toast) {
+          this.$root.toast.error('Error al cargar los datos del dashboard')
+        }
       } finally {
         this.loading = false
       }
     },
+
+    async loadSummaryData() {
+      try {
+        // Obtener total de clientes
+        const customersResponse = await customerService.getAll()
+        this.summary.totalCustomers = customersResponse.data.length
+
+        // Obtener total de contratos
+        const contractsResponse = await contractService.getAll()
+        this.summary.totalContracts = contractsResponse.data.length
+
+        // Obtener cuotas vencidas
+        const overdueResponse = await installmentService.getOverdue()
+        this.summary.overdueInstallments = overdueResponse.data.length
+
+        // Obtener total de productos
+        const productsResponse = await productService.getAll()
+        this.summary.totalProducts = productsResponse.data.length
+
+      } catch (error) {
+        console.error('Error loading summary data:', error)
+        // No lanzar el error, solo logearlo para evitar que se propague
+      }
+    },
+
+    async loadRecentContracts() {
+      try {
+        const response = await contractService.getAll()
+        // Tomar los 5 contratos más recientes
+        this.recentContracts = response.data
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 5)
+      } catch (error) {
+        console.error('Error loading recent contracts:', error)
+        // No lanzar el error, solo logearlo
+      }
+    },
+
+    async loadOverdueInstallments() {
+      try {
+        const response = await installmentService.getOverdue()
+        // Tomar las 5 cuotas vencidas más críticas (más días vencidas)
+        this.overdueInstallments = response.data
+          .sort((a, b) => b.daysOverdue - a.daysOverdue)
+          .slice(0, 5)
+      } catch (error) {
+        console.error('Error loading overdue installments:', error)
+        // No lanzar el error, solo logearlo
+      }
+    },
+
+    async loadUpcomingInstallments() {
+      try {
+        const response = await installmentService.getUpcomingDue()
+        this.upcomingInstallments = response.data
+      } catch (error) {
+        console.error('Error loading upcoming installments:', error)
+        // No lanzar el error, solo logearlo
+      }
+    },
+
+    async loadInstallmentSummary() {
+      try {
+        const response = await installmentService.getSummary()
+        this.installmentSummary = response.data
+      } catch (error) {
+        console.error('Error loading installment summary:', error)
+        // No lanzar el error, solo logearlo
+      }
+    },
+
     formatDate(date) {
       return new Date(date).toLocaleDateString('es-ES')
     },

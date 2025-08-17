@@ -207,7 +207,7 @@
           class="mr-2"
         >
           <v-icon class="mr-2">mdi-credit-card</v-icon>
-          Pagar Cuota
+          Marcar como Pagado
         </v-btn>
         <v-btn
           color="grey"

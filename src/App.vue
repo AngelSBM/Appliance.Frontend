@@ -1,60 +1,88 @@
 <template>
   <v-app>
-    <!-- Barra de navegación -->
-    <v-navigation-drawer
-      v-model="drawer"
-      app
-      :permanent="isDesktop"
-      :temporary="!isDesktop"
-      width="280"
-      class="main-sidebar"
-    >
-      <v-list-item>
-        <v-list-item-content>
-          <v-list-item-title class="text-h6">
-            Sistema de Electrodomésticos
-          </v-list-item-title>
-          <v-list-item-subtitle>
-            Gestión de Contratos
-          </v-list-item-subtitle>
-        </v-list-item-content>
-      </v-list-item>
-
-      <v-divider></v-divider>
-
-      <v-list dense nav>
-        <v-list-item
-          v-for="item in menuItems"
-          :key="item.title"
-          :to="item.path"
-          link
-        >
-          <v-list-item-icon>
-            <v-icon>{{ item.icon }}</v-icon>
-          </v-list-item-icon>
-
+    <!-- Solo mostrar navegación si el usuario está autenticado -->
+    <template v-if="currentUser">
+      <!-- Barra de navegación -->
+      <v-navigation-drawer
+        v-model="drawer"
+        app
+        :permanent="isDesktop"
+        :temporary="!isDesktop"
+        width="280"
+        class="main-sidebar"
+      >
+        <v-list-item>
           <v-list-item-content>
-            <v-list-item-title>{{ item.title }}</v-list-item-title>
+            <v-list-item-title class="text-h6">
+              ElectroApp
+            </v-list-item-title>
+            <v-list-item-subtitle>
+              Gestión de Contratos
+            </v-list-item-subtitle>
           </v-list-item-content>
         </v-list-item>
-      </v-list>
-    </v-navigation-drawer>
 
-    <!-- Barra superior -->
-    <v-app-bar app>
-      <v-app-bar-nav-icon v-if="!isDesktop" @click="drawer = !drawer"></v-app-bar-nav-icon>
-      <v-toolbar-title>Sistema de Electrodomésticos</v-toolbar-title>
-      <v-spacer></v-spacer>
-      
-      <v-btn icon @click="toggleTheme">
-        <v-icon>mdi-theme-light-dark</v-icon>
-      </v-btn>
-    </v-app-bar>
+        <v-divider></v-divider>
 
-    <!-- Contenido principal -->
-    <v-main class="pa-0 router-render">
-      <router-view></router-view>
-    </v-main>
+        <v-list dense nav>
+          <v-list-item
+            v-for="item in menuItems"
+            :key="item.title"
+            :to="item.path"
+            link
+          >
+            <v-list-item-icon>
+              <v-icon>{{ item.icon }}</v-icon>
+            </v-list-item-icon>
+
+            <v-list-item-content>
+              <v-list-item-title>{{ item.title }}</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+        </v-list>
+      </v-navigation-drawer>
+
+      <!-- Barra superior -->
+      <v-app-bar app>
+        <v-app-bar-nav-icon v-if="!isDesktop" @click="drawer = !drawer"></v-app-bar-nav-icon>
+        <v-toolbar-title>ElectroApp</v-toolbar-title>
+        <v-spacer></v-spacer>
+        
+        <!-- Información del usuario logueado -->
+        <div v-if="currentUser" class="d-flex align-center mr-4">
+          <v-avatar size="32" class="mr-2">
+            <v-icon>mdi-account</v-icon>
+          </v-avatar>
+          <span class="text-body-2">{{ currentUser.name || currentUser.username }}</span>
+        </div>
+        
+        <!-- Botón de sign out -->
+        <v-btn
+          v-if="currentUser"
+          icon
+          @click="handleSignOut"
+          title="Cerrar sesión"
+        >
+          <v-icon>mdi-logout</v-icon>
+        </v-btn>
+        
+        <v-btn icon @click="toggleTheme">
+          <v-icon>mdi-theme-light-dark</v-icon>
+        </v-btn>
+      </v-app-bar>
+
+      <!-- Contenido principal -->
+      <v-main class="pa-0 router-render">
+        <router-view></router-view>
+      </v-main>
+    </template>
+
+    <!-- Si no hay usuario autenticado, mostrar solo el contenido del router -->
+    <template v-else>
+      <v-main>
+        <router-view></router-view>
+      </v-main>
+    </template>
 
     <!-- Snackbar para notificaciones -->
     <v-snackbar
@@ -84,6 +112,7 @@ import Contracts from '@/views/Contracts.vue'
 import Installments from '@/views/Installments.vue'
 import Reminders from '@/views/Reminders.vue'
 import Points from '@/views/Points.vue'
+import { getToken, handleRedirectPromise, getUserInfo, logout, isAuthenticated, initializeMsal } from '@/services/authConfig'
 
 export default {
   name: 'App',
@@ -100,6 +129,7 @@ export default {
     return {
       drawer: true,
       isDesktop: window.innerWidth >= 1264,
+      currentUser: null,
       snackbar: {
         show: false,
         text: '',
@@ -145,6 +175,7 @@ export default {
       ]
     }
   },
+
   provide() {
     return {
       toast: {
@@ -155,13 +186,76 @@ export default {
       }
     }
   },
-  mounted() {
+  watch: {
+    // Watcher para monitorear cambios en la URL (para detectar redirecciones de login)
+    async '$route'() {
+      await this.checkAuthStatus()
+    }
+  },
+  async mounted() {
     window.addEventListener('resize', this.handleResize)
+    
+    // Inicializar autenticación con Azure Entra
+    await this.initializeAuth()
+    
+    // Verificar estado de autenticación cada 10 segundos
+    setInterval(async () => {
+      await this.checkAuthStatus()
+    }, 10000)
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.handleResize)
   },
   methods: {
+    async initializeAuth() {
+      try {
+        console.log('Iniciando autenticación...')
+        
+        // Inicializar MSAL primero
+        console.log('Inicializando MSAL...')
+        await initializeMsal()
+        console.log('MSAL inicializado correctamente')
+        
+        // Manejar la promesa de redirección después de inicializar MSAL
+        const response = await handleRedirectPromise()
+        console.log('Respuesta de handleRedirectPromise:', response)
+        
+        // Si hay una respuesta de redirección, significa que el usuario se acaba de loguear
+        if (response) {
+          console.log('Usuario logueado desde redirección:', response)
+          // Verificar inmediatamente el estado de autenticación
+          this.checkAuthStatus()
+        }
+        
+        // Verificar si ya hay un usuario logueado
+        const isAuth = isAuthenticated()
+        console.log('¿Usuario autenticado?', isAuth)
+        
+        if (isAuth) {
+          // Obtener información del usuario logueado
+          this.currentUser = getUserInfo()
+          console.log('Usuario logueado:', this.currentUser)
+          
+          // Solo obtener token si es necesario (para las llamadas a la API)
+          try {
+            await getToken()
+            console.log('Token obtenido exitosamente')
+          } catch (error) {
+            console.error('Error obteniendo token:', error)
+            // No es crítico si falla el token, el usuario puede seguir usando la app
+          }
+        } else {
+          console.log('No hay usuario logueado, redirigiendo a Microsoft...')
+          // Solo redirigir si no hay interacción en progreso
+          getToken().catch(error => {
+            console.error('Error al redirigir a login:', error)
+          })
+        }
+      } catch (error) {
+        console.error('Error durante la autenticación:', error)
+      }
+    },
+    
     toggleTheme() {
       // Implementar cambio de tema
       console.log('Cambiar tema')
@@ -175,6 +269,40 @@ export default {
       this.snackbar.text = text
       this.snackbar.color = color
       this.snackbar.show = true
+    },
+    async handleSignOut() {
+      try {
+        await logout()
+        this.currentUser = null
+        this.showSnackbar('Sesión cerrada exitosamente', 'info')
+      } catch (error) {
+        console.error('Error al cerrar sesión:', error)
+        this.showSnackbar('Error al cerrar sesión', 'error')
+      }
+    },
+    // Método para verificar el estado de autenticación
+    async checkAuthStatus() {
+      try {
+        // Asegurar que MSAL esté inicializado
+        await initializeMsal()
+        
+        const isAuth = isAuthenticated()
+        console.log('Estado de autenticación:', isAuth)
+        
+        if (isAuth && !this.currentUser) {
+          this.currentUser = getUserInfo()
+          console.log('Usuario recuperado:', this.currentUser)
+        } else if (!isAuth && this.currentUser) {
+          this.currentUser = null
+          console.log('Usuario removido (no autenticado)')
+          
+          // Solo redirigir si no estamos ya en proceso de login
+          // El router guard se encargará de la redirección si es necesario
+          console.log('Usuario no autenticado, el router guard manejará la redirección')
+        }
+      } catch (error) {
+        console.error('Error verificando estado de autenticación:', error)
+      }
     }
   }
 }
@@ -272,4 +400,6 @@ html, body {
   height: 100%;
   max-width: none !important;
 }
+
+
 </style> 

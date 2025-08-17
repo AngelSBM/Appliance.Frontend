@@ -70,6 +70,7 @@ export default {
   components: {
     ConfirmDialog
   },
+  inject: ['toast'],
   data() {
     return {
       loading: false,
@@ -95,35 +96,11 @@ export default {
     async loadReminders() {
       this.loading = true
       try {
-        // Datos dummy para recordatorios
-        this.reminders = [
-          {
-            id: 1,
-            customerName: 'Ana Rodríguez',
-            productName: 'Lavadora LG',
-            date: '2024-01-20',
-            dueDate: '2024-02-14',
-            installmentAmount: 300000
-          },
-          {
-            id: 2,
-            customerName: 'Luis Martínez',
-            productName: 'Refrigerador Samsung',
-            date: '2024-01-19',
-            dueDate: '2024-02-15',
-            installmentAmount: 208333
-          },
-          {
-            id: 3,
-            customerName: 'Carmen Silva',
-            productName: 'Televisor Sony',
-            date: '2024-01-18',
-            dueDate: '2024-02-13',
-            installmentAmount: 177778
-          }
-        ]
+        const response = await reminderService.getAll()
+        this.reminders = response.data
       } catch (error) {
         console.error('Error loading reminders:', error)
+        this.toast.error('Error al cargar los recordatorios')
       } finally {
         this.loading = false
       }
@@ -132,17 +109,12 @@ export default {
     async generateOverdueReminders() {
       this.generating = true
       try {
-        // Aquí iría la llamada real al servicio
-        // await reminderService.generateOverdue()
-        
-        // Simular generación de recordatorios
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        
-        this.$toast.success('Recordatorios vencidos generados exitosamente')
-        this.loadReminders()
+        const response = await reminderService.generateOverdue()
+        this.reminders = response.data
+        this.toast.success('Recordatorios generados exitosamente')
       } catch (error) {
         console.error('Error generating overdue reminders:', error)
-        this.$toast.error('Error al generar recordatorios vencidos')
+        this.toast.error('Error al generar recordatorios')
       } finally {
         this.generating = false
       }
@@ -156,19 +128,18 @@ export default {
     async confirmDelete() {
       if (this.reminderToDelete) {
         try {
-          // Aquí iría la llamada real al servicio
-          // await reminderService.delete(this.reminderToDelete.id)
+          await reminderService.delete(this.reminderToDelete.id)
           
-          // Simular eliminación
+          // Eliminar de la lista local
           const index = this.reminders.indexOf(this.reminderToDelete)
           if (index > -1) {
             this.reminders.splice(index, 1)
           }
           
-          this.$toast.success('Recordatorio eliminado exitosamente')
+          this.toast.success('Recordatorio eliminado exitosamente')
         } catch (error) {
           console.error('Error deleting reminder:', error)
-          this.$toast.error('Error al eliminar el recordatorio')
+          this.toast.error('Error al eliminar el recordatorio')
         }
       }
       this.reminderToDelete = null

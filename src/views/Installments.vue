@@ -300,7 +300,7 @@
                   color="success"
                   variant="text"
                   @click="openPaymentDialog(item)"
-                  :title="'Pagar cuota'"
+                  :title="'Marcar como Pagado'"
                 ></v-btn>
                 <v-btn
                   icon="mdi-pencil"
