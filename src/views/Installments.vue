@@ -257,7 +257,7 @@
 
               <!-- Template para estado -->
               <template v-slot:item.status="{ item }">
-                <StatusChip :status="item.status" type="installment" />
+                <StatusChip :status="item.status" :is-overdue="item.isOverdue" type="installment" />
               </template>
 
               <!-- Template para fecha de vencimiento -->

@@ -5,7 +5,7 @@
     size="small"
     :class="chipClass"
   >
-    {{ status }}
+    {{ displayStatus }}
   </v-chip>
 </template>
 
@@ -20,9 +20,20 @@ export default {
     type: {
       type: String,
       default: 'default'
+    },
+    isOverdue: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {
+    displayStatus() {
+      // Para cuotas, si está vencida, mostrar "Vencida" sin importar el status
+      if (this.type === 'installment' && this.isOverdue) {
+        return 'Vencida'
+      }
+      return this.status
+    },
     chipColor() {
       // Mapeo específico para estados de cuotas (en español e inglés)
       const installmentStatusMap = {
@@ -69,7 +80,7 @@ export default {
       
       // Si es tipo installment, usar el mapeo específico
       if (this.type === 'installment') {
-        return installmentStatusMap[this.status] || 'primary'
+        return installmentStatusMap[this.displayStatus] || 'primary'
       }
       
       // Si hay un tipo específico definido

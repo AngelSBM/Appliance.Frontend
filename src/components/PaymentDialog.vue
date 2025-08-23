@@ -80,6 +80,7 @@
 <script>
 import { ref, reactive, computed, watch } from 'vue'
 import installmentService from '../services/installmentService'
+import systemDateService from '../services/systemDateService'
 
 export default {
   name: 'PaymentDialog',
@@ -103,6 +104,7 @@ export default {
     const form = ref(null)
     const valid = ref(false)
     const loading = ref(false)
+    const systemDate = ref(null)
 
     const formData = reactive({
       paymentDate: '',
@@ -139,22 +141,75 @@ export default {
       }
     }
 
+    const loadSystemDate = async () => {
+      try {
+        const response = await systemDateService.getSystemDate()
+        console.log('Respuesta del backend (fecha del sistema):', response.data)
+        
+        // Asegurar que la fecha se parse correctamente
+        const dateString = response.data
+        const parsedDate = new Date(dateString)
+        
+        if (isNaN(parsedDate.getTime())) {
+          console.error('Fecha inválida recibida del backend:', dateString)
+          systemDate.value = new Date()
+        } else {
+          systemDate.value = parsedDate
+          console.log('Fecha del sistema para cálculo de puntos:', systemDate.value)
+        }
+      } catch (error) {
+        console.error('Error loading system date:', error)
+        // Fallback a fecha actual si no se puede obtener la fecha del sistema
+        systemDate.value = new Date()
+      }
+    }
+
     const calculateInstallmentStatus = (dueDate, paymentDate) => {
       if (!dueDate || !paymentDate) return 'Pendiente'
+      
+      // Usar directamente el estado que ya viene en los datos de la cuota
+      if (props.installment && props.installment.isOverdue) {
+        return 'Vencida'
+      }
       
       const due = new Date(dueDate)
       const payment = new Date(paymentDate)
       
+      // Usar la fecha del sistema del backend si está disponible
+      let currentDate = systemDate.value || new Date()
+      
+      // Si la cuota tiene información de días vencidos, calcular la fecha del sistema a partir de ahí
+      if (props.installment && props.installment.daysOverdue !== undefined) {
+        const dueDateObj = new Date(dueDate)
+        dueDateObj.setHours(0, 0, 0, 0)
+        currentDate = new Date(dueDateObj.getTime() + (props.installment.daysOverdue * 24 * 60 * 60 * 1000))
+        console.log('Calculando fecha del sistema desde días vencidos:', {
+          dueDate: dueDate,
+          daysOverdue: props.installment.daysOverdue,
+          calculatedSystemDate: currentDate
+        })
+      }
+      
       due.setHours(0, 0, 0, 0)
       payment.setHours(0, 0, 0, 0)
+      currentDate.setHours(0, 0, 0, 0)
       
-      const diffDays = Math.ceil((due - payment) / (1000 * 60 * 60 * 24))
+      // Calcular días entre la fecha actual del sistema y la fecha de vencimiento
+      const daysUntilDue = Math.ceil((due - currentDate) / (1000 * 60 * 60 * 24))
       
-      if (diffDays < 0) {
+      console.log('Cálculo de estado:', {
+        dueDate: due,
+        systemDate: currentDate,
+        daysUntilDue: daysUntilDue,
+        isOverdue: props.installment?.isOverdue
+      })
+      
+      // Si la cuota ya está vencida según la fecha del sistema, mostrar como vencida
+      if (daysUntilDue < 0) {
         return 'Vencida'
-      } else if (diffDays === 0) {
+      } else if (daysUntilDue === 0) {
         return 'Vence hoy'
-      } else if (diffDays <= 2) {
+      } else if (daysUntilDue <= 2) {
         return 'Próxima a vencer'
       } else {
         return 'Pendiente'
@@ -190,27 +245,50 @@ export default {
         formData.paymentDate
       )
 
+      const systemDateText = systemDate.value ? 
+        `(Fecha del sistema: ${formatDate(systemDate.value)})` : 
+        '(Usando fecha actual)'
+      
+      // Debug info
+      console.log('Debug - Fecha de vencimiento:', props.installment.dueDate)
+      console.log('Debug - Fecha del sistema:', systemDate.value)
+      console.log('Debug - Estado calculado:', status)
+      
+      // Calcular días para debug
+      const due = new Date(props.installment.dueDate)
+      const current = systemDate.value || new Date()
+      const daysUntilDue = Math.ceil((due - current) / (1000 * 60 * 60 * 24))
+      console.log('Debug - Días hasta vencimiento:', daysUntilDue)
+      console.log('Debug - ¿Está vencida?', daysUntilDue < 0)
+
       switch (status) {
         case 'Pendiente':
-          return 'Pago muy anticipado: +20 puntos (incentivo máximo)'
+          return `Pago muy anticipado: +20 puntos (incentivo máximo) ${systemDateText}`
         case 'Próxima a vencer':
-          return 'Pago anticipado: +15 puntos (incentivo por pago anticipado)'
+          return `Pago anticipado: +15 puntos (incentivo por pago anticipado) ${systemDateText}`
         case 'Vence hoy':
-          return 'Pago puntual: +10 puntos (pago en fecha)'
+          return `Pago puntual: +10 puntos (pago en fecha) ${systemDateText}`
         case 'Vencida':
-          return 'Pago tardío: -5 puntos (penalización menor)'
+          return `Pago tardío: -5 puntos (penalización menor) ${systemDateText}`
         default:
-          return 'Puntos calculados automáticamente según la fecha de pago'
+          return `Puntos calculados automáticamente según la fecha de pago ${systemDateText}`
       }
     }
 
     const formatDate = (date) => {
       if (!date) return 'N/A'
-      return new Date(date).toLocaleDateString('es-DO', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      })
+      try {
+        const dateObj = new Date(date)
+        if (isNaN(dateObj.getTime())) return 'Fecha inválida'
+        return dateObj.toLocaleDateString('es-DO', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        })
+      } catch (error) {
+        console.error('Error formatting date:', error, date)
+        return 'Fecha inválida'
+      }
     }
 
     const formatCurrency = (amount) => {
@@ -238,8 +316,10 @@ export default {
     }
 
     // Watchers
-    watch(() => props.installment, (newInstallment) => {
+    watch(() => props.installment, async (newInstallment) => {
       if (newInstallment) {
+        // Cargar la fecha del sistema cuando se abre el diálogo
+        await loadSystemDate()
         formData.paymentDate = new Date().toISOString().slice(0, 16)
       }
     }, { immediate: true })
@@ -254,6 +334,7 @@ export default {
       valid,
       loading,
       formData,
+      systemDate,
       close,
       save,
       calculatePoints,
