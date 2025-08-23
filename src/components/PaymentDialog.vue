@@ -3,7 +3,7 @@
     <v-card>
       <v-card-title class="text-h5">
         <v-icon class="mr-2" color="success">mdi-credit-card</v-icon>
-        Pagar Cuota
+        Marcar como Pagado
       </v-card-title>
 
       <v-card-text>

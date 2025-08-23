@@ -46,7 +46,7 @@ api.interceptors.response.use(
       // Si es un error 401 (no autorizado), no hacer nada especial
       // para evitar redirecciones automáticas
       if (error.response.status === 401) {
-        console.log('Usuario no autorizado para esta operación')
+
       }
     } else if (error.request) {
       // La petición fue hecha pero no se recibió respuesta

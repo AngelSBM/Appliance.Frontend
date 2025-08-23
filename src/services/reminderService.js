@@ -1,34 +1,14 @@
 import api from './api'
 
-export const reminderService = {
-  // Obtener todos los recordatorios
-  getAll() {
-    return api.get('/Reminder')
+export default {
+  // Obtener resumen de recordatorios
+  getSummary() {
+    return api.get('/Reminder/summary')
   },
 
-  // Obtener recordatorio por ID
-  getById(id) {
-    return api.get(`/Reminder/${id}`)
-  },
-
-  // Crear nuevo recordatorio
-  create(reminder) {
-    return api.post('/Reminder', reminder)
-  },
-
-  // Eliminar recordatorio
-  delete(id) {
-    return api.delete(`/Reminder/${id}`)
-  },
-
-  // Obtener recordatorios por cuota
-  getByInstallment(installmentId) {
-    return api.get(`/Reminder/installment/${installmentId}`)
-  },
-
-  // Obtener recordatorios por cliente
-  getByCustomer(customerId) {
-    return api.get(`/Reminder/customer/${customerId}`)
+  // Obtener recordatorios próximos
+  getUpcoming() {
+    return api.get('/Reminder/upcoming')
   },
 
   // Obtener recordatorios vencidos
@@ -36,8 +16,26 @@ export const reminderService = {
     return api.get('/Reminder/overdue')
   },
 
-  // Generar recordatorios vencidos
-  generateOverdue() {
-    return api.post('/Reminder/generate-overdue')
+  // Enviar recordatorios
+  sendReminders() {
+    return api.post('/Reminder/send')
+  },
+
+  // Procesar recordatorios
+  processReminders() {
+    return api.post('/Reminder/process')
+  },
+
+  // Enviar email de prueba
+  testEmail(testEmailRequest) {
+    return api.post('/Reminder/test-email', testEmailRequest)
+  },
+
+  // Obtener historial de recordatorios (nuevo endpoint)
+  getHistory(fromDate, toDate) {
+    const params = {}
+    if (fromDate) params.fromDate = fromDate
+    if (toDate) params.toDate = toDate
+    return api.get('/Reminder/history', { params })
   }
 } 

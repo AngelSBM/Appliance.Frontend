@@ -10,15 +10,16 @@
     :items-per-page-options="[5, 10, 25, 50]"
     class="elevation-1"
     density="comfortable"
+    hover
   >
-    <template v-slot:top>
+    <template #top>
       <v-toolbar flat>
         <v-toolbar-title>{{ title }}</v-toolbar-title>
         <v-divider class="mx-4" inset vertical></v-divider>
         <v-spacer></v-spacer>
         <v-text-field
           v-model="search"
-          append-icon="mdi-magnify"
+          append-inner-icon="mdi-magnify"
           label="Buscar"
           single-line
           hide-details
@@ -27,26 +28,24 @@
         ></v-text-field>
         <v-btn
           color="primary"
-          dark
           class="mb-2"
           @click="$emit('add')"
           v-if="showAddButton"
         >
-          <v-icon left>mdi-plus</v-icon>
+          <v-icon start>mdi-plus</v-icon>
           Agregar
         </v-btn>
       </v-toolbar>
     </template>
 
-    <template v-slot:item.actions="{ item }">
-      <v-tooltip bottom v-if="showEditButton">
-        <template v-slot:activator="{ on, attrs }">
+    <template #item.actions="{ item }">
+      <v-tooltip location="bottom" v-if="showEditButton">
+        <template #activator="{ props }">
           <v-icon
-            small
+            size="small"
             class="mr-2"
             color="primary"
-            v-bind="attrs"
-            v-on="on"
+            v-bind="props"
             @click="$emit('edit', item)"
           >
             mdi-pencil
@@ -55,14 +54,13 @@
         <span>Editar</span>
       </v-tooltip>
       
-      <v-tooltip bottom v-if="showViewButton">
-        <template v-slot:activator="{ on, attrs }">
+      <v-tooltip location="bottom" v-if="showViewButton">
+        <template #activator="{ props }">
           <v-icon
-            small
+            size="small"
             class="mr-2"
             color="info"
-            v-bind="attrs"
-            v-on="on"
+            v-bind="props"
             @click="$emit('view', item)"
           >
             mdi-eye
@@ -71,13 +69,12 @@
         <span>Ver</span>
       </v-tooltip>
       
-      <v-tooltip bottom v-if="showDeleteButton">
-        <template v-slot:activator="{ on, attrs }">
+      <v-tooltip location="bottom" v-if="showDeleteButton">
+        <template #activator="{ props }">
           <v-icon
-            small
+            size="small"
             color="error"
-            v-bind="attrs"
-            v-on="on"
+            v-bind="props"
             @click="$emit('delete', item)"
           >
             mdi-delete
@@ -87,7 +84,7 @@
       </v-tooltip>
     </template>
 
-    <template v-slot:no-data>
+    <template #no-data>
       <v-btn color="primary" @click="$emit('refresh')">
         Recargar
       </v-btn>
@@ -139,6 +136,7 @@ export default {
       sortDesc: [false],
       itemsPerPage: 10
     }
-  }
+  },
+  emits: ['add', 'edit', 'view', 'delete', 'refresh']
 }
 </script> 

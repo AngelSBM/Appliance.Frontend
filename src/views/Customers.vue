@@ -21,53 +21,14 @@
       </v-col>
     </v-row>
 
-    <!-- Diálogo para crear/editar cliente -->
-    <v-dialog v-model="showDialog" max-width="500px">
-      <v-card>
-        <v-card-title>
-          <span class="text-h5">{{ editedIndex === -1 ? 'Nuevo Cliente' : 'Editar Cliente' }}</span>
-        </v-card-title>
-
-        <v-card-text>
-          <v-container>
-            <v-row>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="editedItem.fullName"
-                  label="Nombre Completo"
-                  required
-                ></v-text-field>
-              </v-col>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="editedItem.nationalId"
-                  label="Cédula de Ciudadanía"
-                  required
-                ></v-text-field>
-              </v-col>
-              <v-col cols="12">
-                <v-text-field
-                  v-model.number="editedItem.age"
-                  label="Edad"
-                  type="number"
-                  required
-                ></v-text-field>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="close">
-            Cancelar
-          </v-btn>
-          <v-btn color="blue darken-1" text @click="save">
-            Guardar
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- Formulario de cliente -->
+    <CustomerForm
+      v-model="showDialog"
+      :customer="editedItem"
+      :is-edit="editedIndex > -1"
+      @save="handleSave"
+      @error="handleError"
+    />
 
     <!-- Diálogo de confirmación -->
     <ConfirmDialog
@@ -82,13 +43,15 @@
 <script>
 import DataTable from '@/components/DataTable.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import CustomerForm from '@/components/CustomerForm.vue'
 import customerService from '@/services/customerService'
 
 export default {
   name: 'Customers',
   components: {
     DataTable,
-    ConfirmDialog
+    ConfirmDialog,
+    CustomerForm
   },
   inject: ['toast'],
   data() {
@@ -101,6 +64,7 @@ export default {
         { title: 'ID', key: 'id', sortable: true },
         { title: 'Nombre Completo', key: 'fullName', sortable: true },
         { title: 'Cédula', key: 'nationalId', sortable: true },
+        { title: 'Email', key: 'email', sortable: true },
         { title: 'Edad', key: 'age', sortable: true },
         { title: 'Total Contratos', key: 'totalContracts', sortable: true },
         { title: 'Total Puntos', key: 'totalPoints', sortable: true },
@@ -110,11 +74,13 @@ export default {
       editedItem: {
         fullName: '',
         nationalId: '',
+        email: '',
         age: null
       },
       defaultItem: {
         fullName: '',
         nationalId: '',
+        email: '',
         age: null
       },
       customerToDelete: null
@@ -138,6 +104,7 @@ export default {
             id: 1,
             fullName: 'Juan Pérez',
             nationalId: '12345678',
+            email: 'juan.perez@email.com',
             age: 35,
             totalContracts: 2,
             totalPoints: 150
@@ -146,6 +113,7 @@ export default {
             id: 2,
             fullName: 'María García',
             nationalId: '87654321',
+            email: 'maria.garcia@email.com',
             age: 28,
             totalContracts: 1,
             totalPoints: 75
@@ -195,16 +163,16 @@ export default {
       })
     },
 
-    async save() {
+    async handleSave(customerData) {
       try {
         if (this.editedIndex > -1) {
           // Actualizar cliente existente
-          await customerService.update(this.editedItem.id, this.editedItem)
-          Object.assign(this.customers[this.editedIndex], this.editedItem)
+          await customerService.update(this.editedItem.id, customerData)
+          Object.assign(this.customers[this.editedIndex], customerData)
           this.toast.success('Cliente actualizado exitosamente')
         } else {
           // Crear nuevo cliente
-          const response = await customerService.create(this.editedItem)
+          const response = await customerService.create(customerData)
           this.customers.push(response.data)
           this.toast.success('Cliente creado exitosamente')
         }
@@ -213,6 +181,10 @@ export default {
         console.error('Error saving customer:', error)
         this.toast.error('Error al guardar el cliente')
       }
+    },
+
+    handleError(message) {
+      this.toast.error(message)
     }
   }
 }

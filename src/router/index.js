@@ -60,7 +60,7 @@ const router = createRouter({
 
 // Guardia de navegación para proteger rutas
 router.beforeEach(async (to, from, next) => {
-  console.log('Navegando a:', to.path)
+
   
   try {
     // Inicializar MSAL antes de cualquier operación
@@ -68,14 +68,10 @@ router.beforeEach(async (to, from, next) => {
     
     // Verificar si la ruta requiere autenticación
     if (to.meta.requiresAuth) {
-      console.log('Ruta requiere autenticación')
-      
       // Verificar si el usuario está autenticado
       if (isAuthenticated()) {
-        console.log('Usuario autenticado, permitiendo acceso')
         next()
       } else {
-        console.log('Usuario no autenticado, redirigiendo a Microsoft login')
         // Redirigir directamente a Microsoft para login
         getToken().catch(error => {
           console.error('Error al redirigir a login:', error)
@@ -84,7 +80,6 @@ router.beforeEach(async (to, from, next) => {
       }
     } else {
       // Ruta no requiere autenticación
-      console.log('Ruta no requiere autenticación')
       next()
     }
   } catch (error) {

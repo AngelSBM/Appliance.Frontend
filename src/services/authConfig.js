@@ -36,7 +36,7 @@ export async function getToken() {
   
   // Evitar múltiples interacciones simultáneas
   if (interactionInProgress) {
-    console.log('Interacción en progreso, esperando...');
+    
     return;
   }
   
