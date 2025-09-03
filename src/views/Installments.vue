@@ -1,14 +1,8 @@
 <template>
   <v-container fluid>
-    <!-- Header con título y botón de agregar -->
+    <!-- Botón de agregar -->
     <v-row class="mb-4">
-      <v-col cols="12" sm="8">
-        <h1 class="text-h4 font-weight-bold">
-          <v-icon class="mr-2" color="primary">mdi-credit-card-multiple</v-icon>
-          Gestión de Cuotas
-        </h1>
-      </v-col>
-      <v-col cols="12" sm="4" class="text-right">
+      <v-col cols="12" class="text-right">
         <v-btn
           color="primary"
           prepend-icon="mdi-plus"

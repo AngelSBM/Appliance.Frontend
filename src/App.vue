@@ -7,7 +7,7 @@
       app
       :permanent="isDesktop"
       :temporary="!isDesktop"
-      width="280"
+      
       class="main-sidebar"
     >
       <v-list-item>
@@ -71,7 +71,7 @@
     </v-app-bar>
 
     <!-- Contenido principal -->
-    <v-main :class="currentUser ? 'pa-0 router-render' : ''">
+    <v-main :class="currentUser ? 'pa-0 router-render' : ''" style="padding-top: 90px !important; ">
       <div v-if="!isInitialized" class="d-flex justify-center align-center" style="height: 100vh;">
         <v-progress-circular indeterminate color="primary"></v-progress-circular>
       </div>
@@ -403,5 +403,114 @@ html, body {
   max-width: none !important;
 }
 
+/* Estilos para los iconos del sidebar */
+.v-navigation-drawer .v-list-item .v-list-item__icon .v-icon {
+  color: #1976d2 !important; /* Azul principal de Material Design */
+  transition: all 0.3s ease !important;
+}
+
+/* Efecto hover en los iconos */
+.v-navigation-drawer .v-list-item:hover .v-list-item__icon .v-icon {
+  color: #42a5f5 !important; /* Azul más claro en hover */
+  transform: scale(1.1) !important;
+}
+
+/* Icono activo (ruta actual) */
+.v-navigation-drawer .v-list-item--active .v-list-item__icon .v-icon,
+.v-navigation-drawer .v-list-item.v-list-item--active .v-list-item__icon .v-icon {
+  color: #ff6b35 !important; /* Naranja vibrante para la ruta activa */
+  transform: scale(1.15) !important;
+}
+
+/* Colores específicos para cada tipo de icono - usando selectores más específicos */
+.v-navigation-drawer .v-list .v-list-item:nth-child(1) .v-list-item__icon .v-icon {
+  color: #4caf50 !important; /* Verde para Dashboard */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(2) .v-list-item__icon .v-icon {
+  color: #2196f3 !important; /* Azul para Clientes */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(3) .v-list-item__icon .v-icon {
+  color: #ff9800 !important; /* Naranja para Productos */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(4) .v-list-item__icon .v-icon {
+  color: #9c27b0 !important; /* Púrpura para Contratos */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(5) .v-list-item__icon .v-icon {
+  color: #f44336 !important; /* Rojo para Cuotas */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(6) .v-list-item__icon .v-icon {
+  color: #ffc107 !important; /* Amarillo para Recordatorios */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(7) .v-list-item__icon .v-icon {
+  color: #00bcd4 !important; /* Cian para Puntos de Lealtad */
+}
+
+/* Efecto de sombra sutil en los iconos */
+.v-navigation-drawer .v-list-item__icon .v-icon {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1)) !important;
+}
+
+/* Animación de entrada para los iconos */
+.v-navigation-drawer .v-list-item__icon .v-icon {
+  animation: iconFadeIn 0.5s ease-in-out !important;
+}
+
+/* Selector adicional para asegurar que los colores se apliquen */
+.v-navigation-drawer .v-list .v-list-item .v-list-item__icon .v-icon {
+  color: inherit !important;
+}
+
+/* Forzar colores específicos con mayor especificidad */
+.v-navigation-drawer .v-list .v-list-item:nth-child(1) .v-list-item__icon .v-icon,
+.v-navigation-drawer .v-list .v-list-item:nth-child(1) .v-list-item__icon .v-icon::before {
+  color: #4caf50 !important; /* Verde para Dashboard */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(2) .v-list-item__icon .v-icon,
+.v-navigation-drawer .v-list .v-list-item:nth-child(2) .v-list-item__icon .v-icon::before {
+  color: #2196f3 !important; /* Azul para Clientes */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(3) .v-list-item__icon .v-icon,
+.v-navigation-drawer .v-list .v-list-item:nth-child(3) .v-list-item__icon .v-icon::before {
+  color: #ff9800 !important; /* Naranja para Productos */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(4) .v-list-item__icon .v-icon,
+.v-navigation-drawer .v-list .v-list-item:nth-child(4) .v-list-item__icon .v-icon::before {
+  color: #9c27b0 !important; /* Púrpura para Contratos */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(5) .v-list-item__icon .v-icon,
+.v-navigation-drawer .v-list .v-list-item:nth-child(5) .v-list-item__icon .v-icon::before {
+  color: #f44336 !important; /* Rojo para Cuotas */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(6) .v-list-item__icon .v-icon,
+.v-navigation-drawer .v-list .v-list-item:nth-child(6) .v-list-item__icon .v-icon::before {
+  color: #ffc107 !important; /* Amarillo para Recordatorios */
+}
+
+.v-navigation-drawer .v-list .v-list-item:nth-child(7) .v-list-item__icon .v-icon,
+.v-navigation-drawer .v-list .v-list-item:nth-child(7) .v-list-item__icon .v-icon::before {
+  color: #00bcd4 !important; /* Cian para Puntos de Lealtad */
+}
+
+@keyframes iconFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 </style> 

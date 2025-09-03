@@ -5,8 +5,8 @@ export const msal = new PublicClientApplication({
   auth: {
     clientId: "0dbfff4f-ac7e-43ed-bf32-0f301c7a896a",
     authority: "https://login.microsoftonline.com/angelsebastianbellomateohot.onmicrosoft.com",
-    redirectUri: "http://localhost:5173/",
-    postLogoutRedirectUri: "http://localhost:5173/"
+    redirectUri: "http://localhost:5175/",
+    postLogoutRedirectUri: "http://localhost:5175/"
   },
   cache: { cacheLocation: "localStorage" }
 });
